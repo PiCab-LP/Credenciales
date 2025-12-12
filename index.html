@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Manager de Credenciales</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>🔐 Credenciales</h1>
+                <input type="text" class="global-search" id="globalSearch" placeholder="Buscar juego en todas las compañías...">
+            </div>
+            <div class="companies-list" id="companiesList"></div>
+        </div>
+        <div class="content">
+            <div class="content-header">
+                <div class="company-title" id="companyTitle">Selecciona una compañía</div>
+                <input type="text" class="game-search" id="gameSearch" placeholder="Buscar juegos en esta compañía...">
+            </div>
+            <div class="games-grid" id="gamesGrid">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📁</div>
+                    <p>Selecciona una compañía para ver sus credenciales</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="toast" id="toast">Copiado al portapapeles</div>
+    <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+  import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBvfknEWRrS_0As8sDcQVGfH0RKydzw93A",
+    authDomain: "credentials-toggles.firebaseapp.com",
+    databaseURL: "https://credentials-toggles-default-rtdb.firebaseio.com",
+    projectId: "credentials-toggles",
+    storageBucket: "credentials-toggles.firebasestorage.app",
+    messagingSenderId: "274936685002",
+    appId: "1:274936685002:web:435009cb0b36c65a9def33",
+    measurementId: "G-CDQM9CG3LF"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  window.db = db;
+  window.gamesRef = ref(db, "gamesConfig");
+  window.firebaseOnValue = onValue;
+  window.firebaseSet = set;
+  window.firebaseRef = ref;
+</script>
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
