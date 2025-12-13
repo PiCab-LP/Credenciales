@@ -12,14 +12,23 @@
         <div class="sidebar">
             <div class="sidebar-header">
                 <h1>🔐 Credenciales</h1>
-                <input type="text" class="global-search" id="globalSearch" placeholder="Buscar juego en todas las compañías...">
+                <input type="text" class="global-search" id="globalSearch"
+                       placeholder="Buscar juego en todas las compañías...">
             </div>
+
+            <div class="local-filter">
+                <div class="local-filter-label">Filtro:</div>
+                <div id="localFilterList"></div>
+            </div>
+
             <div class="companies-list" id="companiesList"></div>
         </div>
+
         <div class="content">
             <div class="content-header">
                 <div class="company-title" id="companyTitle">Selecciona una compañía</div>
-                <input type="text" class="game-search" id="gameSearch" placeholder="Buscar juegos en esta compañía...">
+                <input type="text" class="game-search" id="gameSearch"
+                       placeholder="Buscar juegos en esta compañía...">
             </div>
             <div class="games-grid" id="gamesGrid">
                 <div class="empty-state">
@@ -29,31 +38,36 @@
             </div>
         </div>
     </div>
+
     <div class="toast" id="toast">Copiado al portapapeles</div>
+
+    <!-- Firebase Realtime Database -->
     <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-  import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBvfknEWRrS_0As8sDcQVGfH0RKydzw93A",
-    authDomain: "credentials-toggles.firebaseapp.com",
-    databaseURL: "https://credentials-toggles-default-rtdb.firebaseio.com",
-    projectId: "credentials-toggles",
-    storageBucket: "credentials-toggles.firebasestorage.app",
-    messagingSenderId: "274936685002",
-    appId: "1:274936685002:web:435009cb0b36c65a9def33",
-    measurementId: "G-CDQM9CG3LF"
-  };
+        const firebaseConfig = {
+            apiKey: "AIzaSyBvfknEWRrS_0As8sDcQVGfH0RKydzw93A",
+            authDomain: "credentials-toggles.firebaseapp.com",
+            databaseURL: "https://credentials-toggles-default-rtdb.firebaseio.com",
+            projectId: "credentials-toggles",
+            storageBucket: "credentials-toggles.firebasestorage.app",
+            messagingSenderId: "274936685002",
+            appId: "1:274936685002:web:435009cb0b36c65a9def33",
+            measurementId: "G-CDQM9CG3LF"
+        };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+        const app = initializeApp(firebaseConfig);           // inicializa Firebase [web:132]
+        const db = getDatabase(app);                         // instancia Realtime DB [web:132]
 
-  window.db = db;
-  window.gamesRef = ref(db, "gamesConfig");
-  window.firebaseOnValue = onValue;
-  window.firebaseSet = set;
-  window.firebaseRef = ref;
-</script>
+        // Exponer para app.js
+        window.db = db;
+        window.gamesRef = ref(db, "gamesConfig");
+        window.firebaseOnValue = onValue;
+        window.firebaseSet = set;
+        window.firebaseRef = ref;
+    </script>
+
     <script src="data.js"></script>
     <script src="app.js"></script>
 </body>

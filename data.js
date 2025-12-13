@@ -87,9 +87,9 @@ const credentialsData = {
         },
         {
           id: 11,
-          name: "GameVault",
+          name: "Game Vault",
           username: "perubot",
-          link: "",
+          link: "https://agent.gamevault999.com/login",
           active: true,
           lastModified: "2025-12-12"
         }
@@ -182,9 +182,9 @@ const credentialsData = {
         },
         {
           id: 11,
-          name: "GameVault",
+          name: "Game Vault",
           username: "perubot",
-          link: "",
+          link: "https://agent.gamevault999.com/login",
           active: true,
           lastModified: "2025-12-12"
         }

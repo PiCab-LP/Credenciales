@@ -407,3 +407,69 @@ body {
   flex-direction: column;
   justify-content: center; /* centra el contenido verticalmente */
 }
+
+.local-filter {
+  padding: 10px 30px 8px;
+  border-bottom: 1px solid #2a2a2a;
+  background: #181818;
+}
+
+.local-filter-label {
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+#localFilterList {
+  max-height: 140px;
+  overflow-y: auto;
+  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Cada compañía como “pill” redondeada */
+.local-filter-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #e5e5e5;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #2f2f2f;
+  background: #151515;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+/* ocultar checkbox nativo */
+.local-filter-item input[type="checkbox"] {
+  display: none;
+}
+
+/* estado seleccionado (checked) */
+.local-filter-item input[type="checkbox"]:checked + span {
+  color: #e5e5e5;
+}
+
+.local-filter-item input[type="checkbox"]:checked ~ span,
+.local-filter-item input[type="checkbox"]:checked ~ .pill {
+  color: #e5e5e5;
+}
+
+.local-filter-item:has(input[type="checkbox"]:checked) {
+  background: #2563eb33;
+  border-color: #3B82F6;
+}
+
+/* texto */
+.local-filter-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

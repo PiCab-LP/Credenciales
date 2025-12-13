@@ -8,8 +8,71 @@ document.addEventListener('DOMContentLoaded', () => {
   const gameSearch = document.getElementById('gameSearch');
   const globalSearch = document.getElementById('globalSearch');
   const toast = document.getElementById('toast');
+  const localFilterList = document.getElementById('localFilterList');
 
-  // ---- Firebase: leer estado remoto ----
+  // ========= FILTRO LOCAL DE COMPAÑÍAS (SOLO ESTA PC) =========
+  // companyIds = []  => ver TODAS (checkboxes visualmente vacíos)
+  // companyIds = [1,3] => ver solo esas
+  let localCompanyFilter = {
+    companyIds: []
+  };
+
+  const loadLocalFilter = () => {
+    const raw = localStorage.getItem('companyLocalFilter');
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed.companyIds)) {
+        localCompanyFilter = { companyIds: parsed.companyIds };
+      }
+    } catch {
+      localCompanyFilter = { companyIds: [] };
+    }
+  };
+
+  const saveLocalFilter = () => {
+    localStorage.setItem('companyLocalFilter', JSON.stringify(localCompanyFilter));
+  };
+
+  const renderLocalFilterList = () => {
+    if (!localFilterList) return;
+    localFilterList.innerHTML = '';
+    companies.forEach(company => {
+      const wrapper = document.createElement('label');
+      wrapper.className = 'local-filter-item';
+
+      // solo marcar visualmente si está en el array
+      const checked = localCompanyFilter.companyIds.includes(company.id);
+
+      wrapper.innerHTML = `
+        <input type="checkbox" data-company-id="${company.id}" ${checked ? 'checked' : ''}>
+        <span>${company.name}</span>
+      `;
+      localFilterList.appendChild(wrapper);
+    });
+  };
+
+  if (localFilterList) {
+    localFilterList.addEventListener('change', e => {
+      const input = e.target.closest('input[type="checkbox"]');
+      if (!input) return;
+      const id = Number(input.getAttribute('data-company-id'));
+
+      if (input.checked) {
+        if (!localCompanyFilter.companyIds.includes(id)) {
+          localCompanyFilter.companyIds.push(id);
+        }
+      } else {
+        localCompanyFilter.companyIds =
+          localCompanyFilter.companyIds.filter(x => x !== id);
+      }
+
+      saveLocalFilter();
+      renderCompanies();
+    });
+  }
+
+  // ========= FIREBASE =========
   const applyRemoteSettings = () => {
     if (!window.gamesRef || !window.firebaseOnValue) return;
 
@@ -33,7 +96,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  // ---- Firebase: actualizar un toggle remoto ----
   const updateRemoteToggle = (company, game) => {
     if (!window.db || !window.firebaseRef || !window.firebaseSet) return;
     const key = `${company.id}_${game.id}`;
@@ -46,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  // ---- estado en localStorage ----
+  // ========= ESTADO LOCAL (toggles) =========
   const loadState = () => {
     const saved = localStorage.getItem('credentialsState');
     if (!saved) return;
@@ -79,13 +141,20 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('credentialsState', JSON.stringify(state));
   };
 
+  loadLocalFilter();
   loadState();
-  applyRemoteSettings();   // escucha cambios de Firebase
+  applyRemoteSettings();
 
-  // ---- render compañías ----
+  // ========= RENDER COMPAÑÍAS (usa filtro) =========
   const renderCompanies = () => {
     companiesList.innerHTML = '';
-    companies.forEach(company => {
+
+    const visibleCompanies = companies.filter(c => {
+      if (localCompanyFilter.companyIds.length === 0) return true;      // sin selección -> todas
+      return localCompanyFilter.companyIds.includes(c.id);              // selección -> solo marcadas
+    });
+
+    visibleCompanies.forEach(company => {
       const activeCount = company.games.filter(g => g.active).length;
       const item = document.createElement('div');
       item.className = 'company-item';
@@ -103,9 +172,23 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       companiesList.appendChild(item);
     });
+
+    // Si la compañía seleccionada fue filtrada, limpiamos selección
+    if (
+      currentCompany &&
+      !visibleCompanies.find(c => c.id === currentCompany.id)
+    ) {
+      currentCompany = null;
+      companyTitle.textContent = 'Selecciona una compañía';
+      gamesGrid.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📁</div>
+          <p>Selecciona una compañía para ver sus credenciales</p>
+        </div>`;
+    }
   };
 
-  // ---- seleccionar compañía ----
+  // ========= RENDER JUEGOS =========
   const selectCompany = company => {
     currentCompany = company;
     companyTitle.innerHTML = `
@@ -116,7 +199,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderGames(company.games, '');
   };
 
-  // ---- render juegos (panel derecha) ----
   const renderGames = (games, term) => {
     const t = term.toLowerCase();
     const filtered = games.filter(
@@ -168,13 +250,12 @@ document.addEventListener('DOMContentLoaded', () => {
       .join('');
   };
 
-  // ---- búsqueda por compañía ----
+  // ========= BÚSQUEDAS =========
   gameSearch.addEventListener('input', e => {
     if (!currentCompany) return;
     renderGames(currentCompany.games, e.target.value);
   });
 
-  // ---- búsqueda global ----
   const renderGlobalResults = term => {
     const t = term.toLowerCase();
     if (!t) {
@@ -188,6 +269,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const results = [];
     companies.forEach(company => {
+      const isVisibleByFilter =
+        localCompanyFilter.companyIds.length === 0 ||
+        localCompanyFilter.companyIds.includes(company.id);
+      if (!isVisibleByFilter) return;
+
       const matches = company.games.filter(
         g =>
           g.name.toLowerCase().includes(t) ||
@@ -255,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderGlobalResults(e.target.value);
   });
 
-  // ---- delegación eventos copia, link y toggle ----
+  // ========= EVENTOS DE COPIAR / LINK / TOGGLE =========
   gamesGrid.addEventListener('click', e => {
     // copiar username
     const copyBtn = e.target.closest('.copy-btn');
@@ -312,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
       game.lastModified = new Date().toISOString().split('T')[0];
 
       saveState();
-      updateRemoteToggle(company, game);   // <-- sincroniza con Firebase
+      updateRemoteToggle(company, game);
 
       renderCompanies();
       if (globalSearch.value) {
@@ -323,11 +409,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ---- inicializar ----
+  // ========= INICIALIZACIÓN =========
+  renderLocalFilterList();
   renderCompanies();
+
   if (companies.length) {
-    const firstItem = companiesList.querySelector('.company-item');
-    if (firstItem) firstItem.classList.add('active');
-    selectCompany(companies[0]);
+    const firstVisible = companies.find(c => {
+      return (
+        localCompanyFilter.companyIds.length === 0 ||
+        localCompanyFilter.companyIds.includes(c.id)
+      );
+    });
+    if (firstVisible) {
+      const firstItem = companiesList.querySelector('.company-item');
+      if (firstItem) firstItem.classList.add('active');
+      selectCompany(firstVisible);
+    }
   }
 });
