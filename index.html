@@ -12,8 +12,12 @@
         <div class="sidebar">
             <div class="sidebar-header">
                 <h1>🔐 Credenciales</h1>
-                <input type="text" class="global-search" id="globalSearch"
-                       placeholder="Buscar juego en todas las compañías...">
+                <input
+                    type="text"
+                    class="global-search"
+                    id="globalSearch"
+                    placeholder="Buscar juego en todas las compañías..."
+                >
             </div>
 
             <div class="local-filter">
@@ -26,9 +30,16 @@
 
         <div class="content">
             <div class="content-header">
-                <div class="company-title" id="companyTitle">Selecciona una compañía</div>
-                <input type="text" class="game-search" id="gameSearch"
-                       placeholder="Buscar juegos en esta compañía...">
+                <div class="company-title-row">
+                    <div class="company-title" id="companyTitle">Selecciona una compañía</div>
+                    <button id="editModeBtn" class="edit-btn" disabled>Editar</button>
+                </div>
+                <input
+                    type="text"
+                    class="game-search"
+                    id="gameSearch"
+                    placeholder="Buscar juegos en esta compañía..."
+                >
             </div>
             <div class="games-grid" id="gamesGrid">
                 <div class="empty-state">
@@ -41,7 +52,7 @@
 
     <div class="toast" id="toast">Copiado al portapapeles</div>
 
-    <!-- Firebase Realtime Database -->
+    <!-- Firebase Realtime Database (modular v12) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
         import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
@@ -57,18 +68,18 @@
             measurementId: "G-CDQM9CG3LF"
         };
 
-        const app = initializeApp(firebaseConfig);           // inicializa Firebase [web:132]
-        const db = getDatabase(app);                         // instancia Realtime DB [web:132]
+        const app = initializeApp(firebaseConfig);          // Inicializa Firebase [web:213]
+        const db = getDatabase(app);                        // Instancia Realtime DB [web:213]
 
         // Exponer para app.js
         window.db = db;
         window.gamesRef = ref(db, "gamesConfig");
+        window.companiesRef = ref(db, "companies");
         window.firebaseOnValue = onValue;
         window.firebaseSet = set;
         window.firebaseRef = ref;
     </script>
 
-    <script src="data.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

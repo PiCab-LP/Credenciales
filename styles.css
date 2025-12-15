@@ -473,3 +473,162 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.company-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+/* reutiliza el estilo general del layout */
+.edit-btn {
+  padding: 4px 10px;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 4px;
+  color: #e5e5e5;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.edit-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.edit-btn:not(:disabled):hover {
+  background: #3a3a3a;
+  border-color: #4a4a4a;
+}
+
+.edit-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.save-edit-btn {
+  padding: 6px 14px;
+  background: #3B82F6;
+  border: 1px solid #2563EB;
+  border-radius: 4px;
+  color: #f9fafb;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+}
+
+.save-edit-btn:hover {
+  background: #2563EB;
+  border-color: #1D4ED8;
+}
+
+.save-edit-btn:active {
+  transform: translateY(1px);
+}
+
+.edit-username-input,
+.edit-link-input {
+  flex: 1;
+  padding: 6px 10px;
+  background: #0f0f0f;
+  border: 1px solid #3a3a3a;
+  border-radius: 4px;
+  color: #e5e5e5;
+  font-size: 13px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.edit-username-input:focus,
+.edit-link-input:focus {
+  border-color: #3B82F6;
+  background: #111827;
+}
+
+/* Botón azul Guardar ya está con .save-edit-btn */
+/* Botón rojo Eliminar */
+.delete-game-btn {
+  padding: 6px 10px;
+  margin-left: 8px;
+  background: #b91c1c;
+  border: 1px solid #991b1b;
+  border-radius: 4px;
+  color: #fee2e2;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+}
+
+.delete-game-btn:hover {
+  background: #dc2626;
+  border-color: #b91c1c;
+}
+
+.delete-game-btn:active {
+  transform: translateY(1px);
+}
+
+/* Card para nuevo juego */
+.new-game-card {
+  margin-top: 16px;
+  border-style: dashed;
+  border-color: #374151;
+}
+
+/* Inputs del formulario de nuevo juego */
+.new-game-name-input,
+.new-game-username-input,
+.new-game-link-input {
+  flex: 1;
+  padding: 6px 10px;
+  background: #0f0f0f;
+  border: 1px solid #3a3a3a;
+  border-radius: 4px;
+  color: #e5e5e5;
+  font-size: 13px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.new-game-name-input:focus,
+.new-game-username-input:focus,
+.new-game-link-input:focus {
+  border-color: #3B82F6;
+  background: #111827;
+}
+
+/* Botón Agregar juego (estilo similar a Guardar) */
+.add-game-btn {
+  padding: 6px 14px;
+  background: #10B981;
+  border: 1px solid #059669;
+  border-radius: 4px;
+  color: #ecfdf5;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+}
+
+.add-game-btn:hover {
+  background: #059669;
+  border-color: #047857;
+}
+
+.add-game-btn:active {
+  transform: translateY(1px);
+}
+
+.input-dirty {
+  border-color: #eab308 !important;
+  box-shadow: 0 0 0 1px #eab30833;
+}
