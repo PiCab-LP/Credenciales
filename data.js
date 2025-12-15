@@ -1886,6 +1886,14 @@ const credentialsData = {
       link: "https://agent.gamevault999.com",
       active: true,
       lastModified: "2025-12-12"
+    },
+    {
+      id: 12,
+      name: "RiverSweeps",
+      username: "RVTDCDistro",
+      link: "https://river-pay.com",
+      active: true,
+      lastModified: "2025-12-12"
     }
   ]
 },
@@ -1979,6 +1987,14 @@ const credentialsData = {
       name: "Game Vault",
       username: "GVStoreDistro",
       link: "https://agent.gamevault999.com",
+      active: true,
+      lastModified: "2025-12-12"
+    },
+    {
+      id: 12,
+      name: "RiverSweeps",
+      username: "RVTDCDistro",
+      link: "https://river-pay.com",
       active: true,
       lastModified: "2025-12-12"
     }
@@ -2076,6 +2092,14 @@ const credentialsData = {
       link: "https://agent.gamevault999.com",
       active: true,
       lastModified: "2025-12-12"
+    },
+    {
+      id: 12,
+      name: "RiverSweeps",
+      username: "RVTDCDistro",
+      link: "https://river-pay.com",
+      active: true,
+      lastModified: "2025-12-12"
     }
   ]
 },
@@ -2169,6 +2193,14 @@ const credentialsData = {
       name: "Game Vault",
       username: "GVStoreDistro",
       link: "https://agent.gamevault999.com",
+      active: true,
+      lastModified: "2025-12-12"
+    },
+    {
+      id: 12,
+      name: "RiverSweeps",
+      username: "RVTDCDistro",
+      link: "https://river-pay.com",
       active: true,
       lastModified: "2025-12-12"
     }
@@ -2266,6 +2298,14 @@ const credentialsData = {
       link: "https://agent.gamevault999.com",
       active: true,
       lastModified: "2025-12-12"
+    },
+    {
+      id: 12,
+      name: "RiverSweeps",
+      username: "RVTDCDistro",
+      link: "https://river-pay.com",
+      active: true,
+      lastModified: "2025-12-12"
     }
   ]
 },
@@ -2359,6 +2399,14 @@ const credentialsData = {
       name: "Game Vault",
       username: "GVStoreDistro",
       link: "https://agent.gamevault999.com",
+      active: true,
+      lastModified: "2025-12-12"
+    },
+    {
+      id: 12,
+      name: "RiverSweeps",
+      username: "RVTDCDistro",
+      link: "https://river-pay.com",
       active: true,
       lastModified: "2025-12-12"
     }
