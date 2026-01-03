@@ -2,7 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let companies = [];
   let currentCompany = null;
   let isEditMode = false;
-  let selectedCompanyId = null; // recordar selección actual
+  let currentTab = 'credenciales';
+  let selectedCompanyId = null;
   let adminLoggedIn = false;
   const ADMIN_PASSWORD = 'superctrl2023';
 
@@ -14,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const toast = document.getElementById('toast');
   const localFilterList = document.getElementById('localFilterList');
   const editModeBtn = document.getElementById('editModeBtn');
+  const tabsContainer = document.getElementById('tabsContainer');
 
   // ========= FILTRO LOCAL =========
   let localCompanyFilter = { companyIds: [] };
@@ -89,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       renderCompanies();
-      if (currentCompany) {
+      if (currentCompany && currentTab === 'credenciales' && !isEditMode) {
         renderGames(currentCompany.games, gameSearch.value);
       }
     });
@@ -179,6 +181,9 @@ document.addEventListener('DOMContentLoaded', () => {
         editModeBtn.textContent = 'Editar';
         editModeBtn.disabled = true;
       }
+      if (tabsContainer) {
+        tabsContainer.style.display = 'none';
+      }
       gamesGrid.innerHTML = `
         <div class="empty-state">
           <div class="empty-state-icon">📁</div>
@@ -187,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // ========= RENDER JUEGOS (incluye modo edición) =========
+  // ========= SELECCIÓN DE COMPAÑÍA Y TABS =========
   const selectCompany = company => {
     currentCompany = company;
     selectedCompanyId = company.id;
@@ -196,12 +201,84 @@ document.addEventListener('DOMContentLoaded', () => {
       ${company.name}
     `;
     gameSearch.value = '';
+    
+    // Salir de modo edición si estaba activo
+    if (isEditMode) {
+      isEditMode = false;
+      editModeBtn.textContent = 'Editar';
+    }
+    
     if (editModeBtn) {
       editModeBtn.disabled = false;
     }
-    renderGames(company.games, '');
+    
+    // Mostrar tabs
+    if (tabsContainer) {
+      tabsContainer.style.display = 'flex';
+    }
+    
+    // Activar tab de credenciales por defecto
+    currentTab = 'credenciales';
+    switchTab('credenciales');
   };
 
+const switchTab = (tabName) => {
+  if (!currentCompany) return;
+
+  // Solo preguntar si está en modo edición Y está cambiando de tab
+  if (isEditMode && currentTab !== tabName) {
+    const confirmSwitch = confirm('¿Salir del modo edición? Los cambios no guardados se perderán.');
+    if (!confirmSwitch) return;
+    isEditMode = false;
+    editModeBtn.textContent = 'Editar';
+  }
+
+  currentTab = tabName;
+
+  // Actualizar tabs activas
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.classList.toggle('tab-active', tab.dataset.tab === tabName);
+  });
+
+  // Actualizar panes activos
+  document.querySelectorAll('.tab-pane').forEach(pane => {
+    pane.classList.toggle('tab-pane-active', pane.dataset.pane === tabName);
+  });
+
+  // Renderizar contenido según la tab
+  switch(tabName) {
+    case 'credenciales':
+      renderGames(currentCompany.games, '');
+      break;
+    case 'deposito':
+      renderDeposito(currentCompany);
+      break;
+    case 'cashout':
+      renderCashout(currentCompany);
+      break;
+    case 'consideraciones':
+      renderConsideraciones(currentCompany);
+      break;
+    case 'promociones':
+      renderPromociones(currentCompany);
+      break;
+    case 'terminos':
+      renderTerminos(currentCompany);
+      break;
+    case 'canales':
+      renderCanales(currentCompany);
+      break;
+  }
+};
+
+  // Event listeners para tabs
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      switchTab(tab.dataset.tab);
+    });
+  });
+
+  // ========= RENDER CREDENCIALES =========
   const renderGames = (games, term) => {
     const t = term.toLowerCase();
     const filtered = games.filter(
@@ -332,7 +409,629 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // ========= MARCAR INPUTS MODIFICADOS =========
+  // ========= RENDER MÉTODOS DE DEPÓSITO =========
+  const renderDeposito = (company) => {
+    const container = document.getElementById('depositoContent');
+    if (!container) return;
+    
+    const metodos = company.metodosDeposito || [];
+    
+    if (!isEditMode) {
+      // MODO VISTA
+      if (metodos.length === 0) {
+        container.innerHTML = `
+          <div class="tab-info-card">
+            <h3>Métodos de depósito</h3>
+            <p>No hay métodos de depósito disponibles.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      let html = '<div class="tab-info-card"><h3>Métodos de depósito</h3>';
+      
+      metodos.forEach((metodo) => {
+        html += `
+          <div class="metodo-deposito-item">
+            <div class="metodo-titulo">${metodo.metodo || metodo.metodoPago || 'Método de depósito'}</div>
+            <div class="metodo-detalles">
+              <div class="metodo-row">
+                <span class="metodo-label">Proveedor:</span>
+                <span class="metodo-value">${metodo.proveedor || 'N/A'}</span>
+              </div>
+              <div class="metodo-row">
+                <span class="metodo-label">Monto mínimo:</span>
+                <span class="metodo-value">${metodo.montoMinimo || 'N/A'}</span>
+              </div>
+              <div class="metodo-row">
+                <span class="metodo-label">Monto máximo:</span>
+                <span class="metodo-value">${metodo.montoMaximo || 'N/A'}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+      container.innerHTML = html;
+    } else {
+      // MODO EDICIÓN
+      let html = '<div class="edit-section"><h3>Métodos de depósito</h3>';
+      
+      metodos.forEach((metodo, index) => {
+        html += `
+          <div class="edit-metodo-card">
+            <div class="edit-card-header">
+              <input 
+                type="text" 
+                class="edit-input" 
+                value="${metodo.metodo || metodo.metodoPago || ''}" 
+                data-index="${index}"
+                data-field="metodo"
+                placeholder="Nombre del método"
+              />
+              <button class="delete-btn" data-index="${index}" data-type="deposito">🗑️</button>
+            </div>
+            <div class="edit-card-body">
+              <label>Proveedor:</label>
+              <input 
+                type="text" 
+                class="edit-input" 
+                value="${metodo.proveedor || ''}" 
+                data-index="${index}"
+                data-field="proveedor"
+              />
+              <label>Monto mínimo:</label>
+              <input 
+                type="text" 
+                class="edit-input" 
+                value="${metodo.montoMinimo || ''}" 
+                data-index="${index}"
+                data-field="montoMinimo"
+              />
+              <label>Monto máximo:</label>
+              <input 
+                type="text" 
+                class="edit-input" 
+                value="${metodo.montoMaximo || ''}" 
+                data-index="${index}"
+                data-field="montoMaximo"
+              />
+            </div>
+          </div>
+        `;
+      });
+      
+      html += `
+        <button class="add-new-btn" data-type="deposito">
+          + Agregar método de depósito
+        </button>
+      `;
+      
+      html += '</div>';
+      container.innerHTML = html;
+    }
+  };
+
+  // ========= RENDER MÉTODOS DE CASHOUT =========
+  const renderCashout = (company) => {
+    const container = document.getElementById('cashoutContent');
+    if (!container) return;
+    
+    const metodos = company.metodosCashout || [];
+    
+    if (!isEditMode) {
+      // MODO VISTA
+      if (metodos.length === 0) {
+        container.innerHTML = `
+          <div class="tab-info-card">
+            <h3>Métodos de cashout</h3>
+            <p>No hay métodos de cashout disponibles.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      let html = '<div class="tab-info-card"><h3>Métodos de cashout</h3>';
+      
+      metodos.forEach((metodo) => {
+        html += `
+          <div class="metodo-deposito-item">
+            <div class="metodo-titulo">${metodo.metodo || metodo.metodoPago || 'Método de cashout'}</div>
+            <div class="metodo-detalles">
+              <div class="metodo-row">
+                <span class="metodo-label">Proveedor:</span>
+                <span class="metodo-value">${metodo.proveedor || 'N/A'}</span>
+              </div>
+              <div class="metodo-row">
+                <span class="metodo-label">Monto mínimo:</span>
+                <span class="metodo-value">${metodo.montoMinimo || 'N/A'}</span>
+              </div>
+              <div class="metodo-row">
+                <span class="metodo-label">Monto máximo:</span>
+                <span class="metodo-value">${metodo.montoMaximo || 'N/A'}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+      container.innerHTML = html;
+    } else {
+      // MODO EDICIÓN
+      let html = '<div class="edit-section"><h3>Métodos de cashout</h3>';
+      
+      metodos.forEach((metodo, index) => {
+        html += `
+          <div class="edit-metodo-card">
+            <div class="edit-card-header">
+              <input 
+                type="text" 
+                class="edit-input" 
+                value="${metodo.metodo || metodo.metodoPago || ''}" 
+                data-index="${index}"
+                data-field="metodo"
+                placeholder="Nombre del método"
+              />
+              <button class="delete-btn" data-index="${index}" data-type="cashout">🗑️</button>
+            </div>
+            <div class="edit-card-body">
+              <label>Proveedor:</label>
+              <input 
+                type="text" 
+                class="edit-input" 
+                value="${metodo.proveedor || ''}" 
+                data-index="${index}"
+                data-field="proveedor"
+              />
+              <label>Monto mínimo:</label>
+              <input 
+                type="text" 
+                class="edit-input" 
+                value="${metodo.montoMinimo || ''}" 
+                data-index="${index}"
+                data-field="montoMinimo"
+              />
+              <label>Monto máximo:</label>
+              <input 
+                type="text" 
+                class="edit-input" 
+                value="${metodo.montoMaximo || ''}" 
+                data-index="${index}"
+                data-field="montoMaximo"
+              />
+            </div>
+          </div>
+        `;
+      });
+      
+      html += `
+        <button class="add-new-btn" data-type="cashout">
+          + Agregar método de cashout
+        </button>
+      `;
+      
+      html += '</div>';
+      container.innerHTML = html;
+    }
+  };
+
+  // ========= RENDER CONSIDERACIONES =========
+  const renderConsideraciones = (company) => {
+    const container = document.getElementById('consideracionesContent');
+    if (!container) return;
+    
+    const consideraciones = company.consideracionesCashout || '';
+    
+    if (!isEditMode) {
+      // MODO VISTA
+      if (!consideraciones) {
+        container.innerHTML = `
+          <div class="tab-info-card">
+            <h3>Consideraciones para cashouts</h3>
+            <p>No hay consideraciones disponibles.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = `
+        <div class="tab-info-card">
+          <h3>Consideraciones para cashouts</h3>
+          <p style="white-space: pre-wrap; line-height: 1.6;">${consideraciones}</p>
+        </div>
+      `;
+    } else {
+      // MODO EDICIÓN
+      container.innerHTML = `
+        <div class="edit-section">
+          <h3>Consideraciones para cashouts</h3>
+          <textarea 
+            id="consideracionesTextarea"
+            class="edit-textarea" 
+            rows="10"
+            placeholder="Escribe las consideraciones para cashouts..."
+          >${consideraciones}</textarea>
+        </div>
+      `;
+    }
+  };
+
+  // ========= RENDER PROMOCIONES =========
+  const renderPromociones = (company) => {
+    const container = document.getElementById('promocionesContent');
+    if (!container) return;
+    
+    const promociones = company.promociones || [];
+    
+    if (!isEditMode) {
+      // MODO VISTA
+      if (promociones.length === 0) {
+        container.innerHTML = `
+          <div class="tab-info-card">
+            <h3>Promociones activas</h3>
+            <p>No hay promociones disponibles.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      let html = '<div class="tab-info-card"><h3>Promociones activas</h3>';
+      html += '<div class="promociones-simple-list">';
+      
+      promociones.forEach((promo, index) => {
+        html += `
+          <div class="promocion-simple-item">
+            <div class="promocion-simple-title">${promo.titulo || 'Promoción ' + (index + 1)}</div>
+            <div class="promocion-simple-desc">${promo.descripcion || 'Sin descripción'}</div>
+          </div>
+        `;
+      });
+      
+      html += '</div></div>';
+      container.innerHTML = html;
+    } else {
+      // MODO EDICIÓN
+      let html = '<div class="edit-section"><h3>Promociones activas</h3>';
+      
+      promociones.forEach((promo, index) => {
+        html += `
+          <div class="edit-metodo-card">
+            <div class="edit-card-header">
+              <input 
+                type="text" 
+                class="edit-input" 
+                value="${promo.titulo || ''}" 
+                data-index="${index}"
+                data-field="titulo"
+                placeholder="Título de la promoción"
+              />
+              <button class="delete-btn" data-index="${index}" data-type="promociones">🗑️</button>
+            </div>
+            <div class="edit-card-body">
+              <label>Descripción:</label>
+              <textarea 
+                class="edit-textarea" 
+                rows="3"
+                data-index="${index}"
+                data-field="descripcion"
+                placeholder="Descripción de la promoción"
+              >${promo.descripcion || ''}</textarea>
+            </div>
+          </div>
+        `;
+      });
+      
+      html += `
+        <button class="add-new-btn" data-type="promociones">
+          + Agregar promoción
+        </button>
+      `;
+      
+      html += '</div>';
+      container.innerHTML = html;
+    }
+  };
+
+  // ========= RENDER TÉRMINOS =========
+  const renderTerminos = (company) => {
+    const container = document.getElementById('terminosContent');
+    if (!container) return;
+    
+    const link = company.terminosLink || company.terminosCondiciones || '';
+    
+    if (!isEditMode) {
+      // MODO VISTA
+      if (!link) {
+        container.innerHTML = `
+          <div class="tab-info-card">
+            <h3>Términos y condiciones</h3>
+            <p>No hay información disponible.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      if (typeof link === 'string' && (link.startsWith('http://') || link.startsWith('https://'))) {
+        container.innerHTML = `
+          <div class="tab-info-card">
+            <h3>Términos y condiciones</h3>
+            <p style="margin-bottom: 16px;">Consulta los términos y condiciones completos en el siguiente enlace:</p>
+            <a href="${link}" target="_blank" rel="noopener noreferrer" class="terminos-link-btn">
+              Ver términos y condiciones completos →
+            </a>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="tab-info-card">
+            <h3>Términos y condiciones</h3>
+            <p style="white-space: pre-wrap;">${link}</p>
+          </div>
+        `;
+      }
+    } else {
+      // MODO EDICIÓN
+      container.innerHTML = `
+        <div class="edit-section">
+          <h3>Términos y condiciones</h3>
+          <label>URL o texto de términos y condiciones:</label>
+          <input 
+            type="text" 
+            id="terminosInput"
+            class="edit-input" 
+            value="${link}" 
+            placeholder="https://example.com/terminos o texto directo"
+          />
+        </div>
+      `;
+    }
+  };
+
+  // ========= RENDER CANALES =========
+  const renderCanales = (company) => {
+    const container = document.getElementById('canalesContent');
+    if (!container) return;
+    
+    const canales = company.canales || company.canalesAtencion || [];
+    
+    if (!isEditMode) {
+      // MODO VISTA
+      if (canales.length === 0) {
+        container.innerHTML = `
+          <div class="tab-info-card">
+            <h3>Canales de atención</h3>
+            <p>No hay canales de atención disponibles.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      let html = '<div class="tab-info-card"><h3>Canales de atención</h3><div class="canales-list">';
+      
+      canales.forEach((canal) => {
+        if (typeof canal === 'string') {
+          html += `
+            <div class="canal-item">
+              <div class="canal-nombre">${canal}</div>
+            </div>
+          `;
+        } else {
+          const nombre = canal.nombre || canal.tipo || 'Canal de atención';
+          const contacto = canal.contacto || canal.valor || canal.link || '';
+          
+          html += `
+            <div class="canal-item">
+              <div class="canal-nombre">${nombre}</div>
+              ${contacto ? `<div class="canal-contacto">${contacto}</div>` : ''}
+            </div>
+          `;
+        }
+      });
+      
+      html += '</div></div>';
+      container.innerHTML = html;
+    } else {
+      // MODO EDICIÓN
+      let html = '<div class="edit-section"><h3>Canales de atención</h3>';
+      
+      canales.forEach((canal, index) => {
+        const canalTexto = typeof canal === 'string' ? canal : (canal.nombre || '');
+        html += `
+          <div class="edit-canal-card">
+            <div class="edit-card-header">
+              <input 
+                type="text" 
+                class="edit-input" 
+                value="${canalTexto}" 
+                data-index="${index}"
+                placeholder="Nombre del canal (ej: WhatsApp: +123456789)"
+              />
+              <button class="delete-btn" data-index="${index}" data-type="canales">🗑️</button>
+            </div>
+          </div>
+        `;
+      });
+      
+      html += `
+        <button class="add-new-btn" data-type="canales">
+          + Agregar canal de atención
+        </button>
+      `;
+      
+      html += '</div>';
+      container.innerHTML = html;
+    }
+  };
+
+  // ========= GUARDAR CAMBIOS POR TAB =========
+  const saveCurrentTab = async () => {
+    if (!currentCompany) return;
+
+    const companyIndex = companies.findIndex(c => c.id === currentCompany.id);
+    if (companyIndex === -1) return;
+
+    try {
+      switch(currentTab) {
+        case 'credenciales':
+          // Ya se guarda individualmente
+          break;
+          
+        case 'deposito':
+          const depositoContainer = document.getElementById('depositoContent');
+          const metodosDeposito = [];
+          depositoContainer.querySelectorAll('.edit-metodo-card').forEach((card, index) => {
+            const metodo = card.querySelector('[data-field="metodo"]').value;
+            const proveedor = card.querySelector('[data-field="proveedor"]').value;
+            const montoMinimo = card.querySelector('[data-field="montoMinimo"]').value;
+            const montoMaximo = card.querySelector('[data-field="montoMaximo"]').value;
+            metodosDeposito.push({ metodo, proveedor, montoMinimo, montoMaximo });
+          });
+          currentCompany.metodosDeposito = metodosDeposito;
+          await window.firebaseSet(
+            window.firebaseRef(window.db, `companies/${currentCompany.id}/metodosDeposito`),
+            metodosDeposito
+          );
+          break;
+          
+        case 'cashout':
+          const cashoutContainer = document.getElementById('cashoutContent');
+          const metodosCashout = [];
+          cashoutContainer.querySelectorAll('.edit-metodo-card').forEach((card, index) => {
+            const metodo = card.querySelector('[data-field="metodo"]').value;
+            const proveedor = card.querySelector('[data-field="proveedor"]').value;
+            const montoMinimo = card.querySelector('[data-field="montoMinimo"]').value;
+            const montoMaximo = card.querySelector('[data-field="montoMaximo"]').value;
+            metodosCashout.push({ metodo, proveedor, montoMinimo, montoMaximo });
+          });
+          currentCompany.metodosCashout = metodosCashout;
+          await window.firebaseSet(
+            window.firebaseRef(window.db, `companies/${currentCompany.id}/metodosCashout`),
+            metodosCashout
+          );
+          break;
+          
+        case 'consideraciones':
+          const consideracionesValue = document.getElementById('consideracionesTextarea').value;
+          currentCompany.consideracionesCashout = consideracionesValue;
+          await window.firebaseSet(
+            window.firebaseRef(window.db, `companies/${currentCompany.id}/consideracionesCashout`),
+            consideracionesValue
+          );
+          break;
+          
+        case 'promociones':
+          const promocionesContainer = document.getElementById('promocionesContent');
+          const promociones = [];
+          promocionesContainer.querySelectorAll('.edit-metodo-card').forEach((card, index) => {
+            const titulo = card.querySelector('[data-field="titulo"]').value;
+            const descripcion = card.querySelector('[data-field="descripcion"]').value;
+            promociones.push({ titulo, descripcion });
+          });
+          currentCompany.promociones = promociones;
+          await window.firebaseSet(
+            window.firebaseRef(window.db, `companies/${currentCompany.id}/promociones`),
+            promociones
+          );
+          break;
+          
+        case 'terminos':
+          const terminosValue = document.getElementById('terminosInput').value;
+          currentCompany.terminosLink = terminosValue;
+          await window.firebaseSet(
+            window.firebaseRef(window.db, `companies/${currentCompany.id}/terminosLink`),
+            terminosValue
+          );
+          break;
+          
+        case 'canales':
+          const canalesContainer = document.getElementById('canalesContent');
+          const canales = [];
+          canalesContainer.querySelectorAll('.edit-canal-card input').forEach((input) => {
+            if (input.value.trim()) canales.push(input.value.trim());
+          });
+          currentCompany.canales = canales;
+          await window.firebaseSet(
+            window.firebaseRef(window.db, `companies/${currentCompany.id}/canales`),
+            canales
+          );
+          break;
+      }
+
+      toast.textContent = '✅ Cambios guardados correctamente';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+      
+    } catch (error) {
+      console.error('Error al guardar:', error);
+      toast.textContent = '❌ Error al guardar cambios';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+  };
+
+  // ========= EVENT DELEGATION PARA BOTONES DE EDICIÓN =========
+  document.addEventListener('click', (e) => {
+    // Agregar nuevo elemento
+    const addBtn = e.target.closest('.add-new-btn');
+    if (addBtn && isEditMode) {
+      const type = addBtn.dataset.type;
+      
+      switch(type) {
+        case 'deposito':
+          if (!currentCompany.metodosDeposito) currentCompany.metodosDeposito = [];
+          currentCompany.metodosDeposito.push({ metodo: '', proveedor: '', montoMinimo: '', montoMaximo: '' });
+          renderDeposito(currentCompany);
+          break;
+        case 'cashout':
+          if (!currentCompany.metodosCashout) currentCompany.metodosCashout = [];
+          currentCompany.metodosCashout.push({ metodo: '', proveedor: '', montoMinimo: '', montoMaximo: '' });
+          renderCashout(currentCompany);
+          break;
+        case 'promociones':
+          if (!currentCompany.promociones) currentCompany.promociones = [];
+          currentCompany.promociones.push({ titulo: '', descripcion: '' });
+          renderPromociones(currentCompany);
+          break;
+        case 'canales':
+          if (!currentCompany.canales) currentCompany.canales = [];
+          currentCompany.canales.push('');
+          renderCanales(currentCompany);
+          break;
+      }
+    }
+    
+    // Eliminar elemento
+    const deleteBtn = e.target.closest('.delete-btn');
+    if (deleteBtn && isEditMode) {
+      const type = deleteBtn.dataset.type;
+      const index = parseInt(deleteBtn.dataset.index);
+      
+      if (!confirm('¿Eliminar este elemento?')) return;
+      
+      switch(type) {
+        case 'deposito':
+          currentCompany.metodosDeposito.splice(index, 1);
+          renderDeposito(currentCompany);
+          break;
+        case 'cashout':
+          currentCompany.metodosCashout.splice(index, 1);
+          renderCashout(currentCompany);
+          break;
+        case 'promociones':
+          currentCompany.promociones.splice(index, 1);
+          renderPromociones(currentCompany);
+          break;
+        case 'canales':
+          currentCompany.canales.splice(index, 1);
+          renderCanales(currentCompany);
+          break;
+      }
+    }
+  });
+
+  // ========= MARCAR INPUTS MODIFICADOS (CREDENCIALES) =========
   const attachEditInputsListeners = () => {
     if (!currentCompany || !isEditMode) return;
 
@@ -469,7 +1168,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderGlobalResults(e.target.value);
   });
 
-  // ========= HELPERS CREAR / ELIMINAR =========
+  // ========= HELPERS CREAR / ELIMINAR (CREDENCIALES) =========
   const getNextGameId = company => {
     if (!company.games.length) return 1;
     const maxId = company.games.reduce(
@@ -562,7 +1261,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => toast.classList.remove('show'), 1200);
   };
 
-  // ========= EVENTOS GRID =========
+  // ========= EVENTOS GRID (CREDENCIALES) =========
   gamesGrid.addEventListener('click', e => {
     if (!companies || !companies.length) return;
 
@@ -628,7 +1327,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const newLink = linkInput ? linkInput.value.trim() : game.link;
 
       if (newUsername === game.username && newLink === game.link) {
-        return; // sin cambios reales
+        return;
       }
 
       const okEdit = confirm(
@@ -720,33 +1419,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ========= BOTÓN EDITAR + LOGIN BÁSICO =========
+  // ========= BOTÓN EDITAR =========
   if (editModeBtn) {
-    editModeBtn.addEventListener('click', () => {
+    editModeBtn.addEventListener('click', async () => {
       if (!currentCompany) return;
 
-      if (!adminLoggedIn) {
-        const storedAdmin = localStorage.getItem('credentialsAdminLoggedIn');
-        adminLoggedIn = storedAdmin === 'true';
-
+      if (!isEditMode) {
+        // ENTRAR EN MODO EDICIÓN
         if (!adminLoggedIn) {
-          const pwd = prompt('Introduce la contraseña de administrador para editar:');
-          if (!pwd) return;
-          if (pwd !== ADMIN_PASSWORD) {
-            alert('Contraseña incorrecta.');
-            return;
-          }
-          adminLoggedIn = true;
-          localStorage.setItem('credentialsAdminLoggedIn', 'true');
-          alert('Acceso concedido. Ahora puedes editar.');
-        }
-      }
+          const storedAdmin = localStorage.getItem('credentialsAdminLoggedIn');
+          adminLoggedIn = storedAdmin === 'true';
 
-      isEditMode = !isEditMode;
-      editModeBtn.textContent = isEditMode ? 'Salir de edición' : 'Editar';
-      renderGames(currentCompany.games, gameSearch.value);
-      if (isEditMode && currentCompany) {
-        attachEditInputsListeners();
+          if (!adminLoggedIn) {
+            const pwd = prompt('Introduce la contraseña de administrador para editar:');
+            if (!pwd) return;
+            if (pwd !== ADMIN_PASSWORD) {
+              alert('Contraseña incorrecta.');
+              return;
+            }
+            adminLoggedIn = true;
+            localStorage.setItem('credentialsAdminLoggedIn', 'true');
+            alert('Acceso concedido. Ahora puedes editar.');
+          }
+        }
+
+        isEditMode = true;
+        editModeBtn.textContent = 'Guardar';
+        
+        // Re-renderizar la tab actual en modo edición
+        switchTab(currentTab);
+        
+      } else {
+        // GUARDAR Y SALIR DE MODO EDICIÓN
+        const confirmSave = confirm('¿Guardar los cambios?');
+        if (!confirmSave) return;
+        
+        await saveCurrentTab();
+        
+        isEditMode = false;
+        editModeBtn.textContent = 'Editar';
+        
+        // Re-renderizar en modo vista
+        switchTab(currentTab);
       }
     });
   }

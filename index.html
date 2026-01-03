@@ -11,7 +11,7 @@
     <div class="container">
         <div class="sidebar">
             <div class="sidebar-header">
-                <h1>🔐 Credenciales</h1>
+                <h1>🔐 OPERAPEDIA</h1>
                 <input
                     type="text"
                     class="global-search"
@@ -34,17 +34,65 @@
                     <div class="company-title" id="companyTitle">Selecciona una compañía</div>
                     <button id="editModeBtn" class="edit-btn" disabled>Editar</button>
                 </div>
-                <input
-                    type="text"
-                    class="game-search"
-                    id="gameSearch"
-                    placeholder="Buscar juegos en esta compañía..."
-                >
+
+                <!-- TABS HORIZONTALES (solo visibles cuando hay compañía seleccionada) -->
+                <div class="tabs-container" id="tabsContainer">
+                    <button class="tab tab-active" data-tab="credenciales">Credenciales</button>
+                    <button class="tab" data-tab="deposito">Métodos de depósito</button>
+                    <button class="tab" data-tab="cashout">Métodos de cashout</button>
+                    <button class="tab" data-tab="consideraciones">Consideraciones para cashouts</button>
+                    <button class="tab" data-tab="promociones">Promociones</button>
+                    <button class="tab" data-tab="terminos">Términos y condiciones</button>
+                    <button class="tab" data-tab="canales">Canales de atención</button>
+                </div>
             </div>
-            <div class="games-grid" id="gamesGrid">
-                <div class="empty-state">
-                    <div class="empty-state-icon">📁</div>
-                    <p>Selecciona una compañía para ver sus credenciales</p>
+
+            <!-- CONTENEDOR DE CONTENIDO POR TAB -->
+            <div class="tab-content" id="tabContent">
+                <!-- TAB: CREDENCIALES (tu grilla actual) -->
+                <div class="tab-pane tab-pane-active" data-pane="credenciales">
+                    <input
+                        type="text"
+                        class="game-search"
+                        id="gameSearch"
+                        placeholder="Buscar juegos en esta compañía..."
+                    >
+                    <div class="games-grid" id="gamesGrid">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📁</div>
+                            <p>Selecciona una compañía para ver sus credenciales</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: MÉTODOS DE DEPÓSITO -->
+                <div class="tab-pane" data-pane="deposito">
+                    <div id="depositoContent"></div>
+                </div>
+
+                <!-- TAB: MÉTODOS DE CASHOUT -->
+                <div class="tab-pane" data-pane="cashout">
+                    <div id="cashoutContent"></div>
+                </div>
+
+                <!-- TAB: CONSIDERACIONES PARA CASHOUTS -->
+                <div class="tab-pane" data-pane="consideraciones">
+                    <div id="consideracionesContent"></div>
+                </div>
+
+                <!-- TAB: PROMOCIONES -->
+                <div class="tab-pane" data-pane="promociones">
+                    <div id="promocionesContent"></div>
+                </div>
+
+                <!-- TAB: TÉRMINOS Y CONDICIONES -->
+                <div class="tab-pane" data-pane="terminos">
+                    <div id="terminosContent"></div>
+                </div>
+
+                <!-- TAB: CANALES DE ATENCIÓN -->
+                <div class="tab-pane" data-pane="canales">
+                    <div id="canalesContent"></div>
                 </div>
             </div>
         </div>
@@ -68,8 +116,8 @@
             measurementId: "G-CDQM9CG3LF"
         };
 
-        const app = initializeApp(firebaseConfig);          // Inicializa Firebase [web:213]
-        const db = getDatabase(app);                        // Instancia Realtime DB [web:213]
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
 
         // Exponer para app.js
         window.db = db;

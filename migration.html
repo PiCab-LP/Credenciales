@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Migración Enciclopedia (RTDB)</title>
+  <style>
+    body { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      background:#0f0f0f; color:#e5e5e5; padding:24px; max-width:980px; margin:0 auto; }
+    button { background:#3B82F6; border:none; color:#fff; padding:10px 14px; border-radius:8px; cursor:pointer; font-weight:700; }
+    button:disabled { background:#2a2a2a; cursor:not-allowed; }
+    .box { margin-top:14px; background:#141414; border:1px solid #2a2a2a; border-radius:10px; padding:14px; }
+    .log { white-space:pre-wrap; line-height:1.45; max-height:60vh; overflow:auto; }
+    .ok { color:#10B981; }
+    .warn { color:#f59e0b; }
+    .err { color:#ef4444; }
+  </style>
+</head>
+<body>
+  <h2>🔧 Migración: Enciclopedia por compañía</h2>
+  <div class="box">
+    <button id="run">Ejecutar migración</button>
+    <div style="margin-top:10px; opacity:.8; font-size:13px;">
+      Crea nodos nuevos con dummy corto (solo si no existen). Montos como números.
+    </div>
+  </div>
+
+  <div class="box log" id="log"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBvfknEWRrS_0As8sDcQVGfH0RKydzw93A",
+      authDomain: "credentials-toggles.firebaseapp.com",
+      databaseURL: "https://credentials-toggles-default-rtdb.firebaseio.com",
+      projectId: "credentials-toggles",
+      storageBucket: "credentials-toggles.firebasestorage.app",
+      messagingSenderId: "274936685002",
+      appId: "1:274936685002:web:435009cb0b36c65a9def33",
+      measurementId: "G-CDQM9CG3LF"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const $log = document.getElementById("log");
+    const $run = document.getElementById("run");
+
+    const log = (msg, cls="") => {
+      const line = document.createElement("div");
+      line.className = cls;
+      line.textContent = msg;
+      $log.appendChild(line);
+      $log.scrollTop = $log.scrollHeight;
+      console.log(msg);
+    };
+
+    // Dummy corto - montos como NÚMEROS
+    const dummy = {
+      metodosDeposito: {
+        "0": { 
+          proveedor: "Proveedor demo", 
+          metodoPago: "Método demo", 
+          montoMinimo: 10, 
+          montoMaximo: 500 
+        }
+      },
+      metodosCashout: {
+        "0": { 
+          proveedor: "Proveedor demo", 
+          metodoPago: "Método demo", 
+          montoMinimo: 20, 
+          montoMaximo: 1000 
+        }
+      },
+      consideracionesCashout: "Lorem ipsum: políticas generales de retiros (editar).",
+      promociones: {
+        "0": { 
+          titulo: "Promo demo", 
+          descripcion: "Lorem ipsum dolor sit amet." 
+        }
+      },
+      terminosLink: "https://example.com/terminos",
+      canales: ["WhatsApp", "Telegram", "Email"]
+    };
+
+    $run.addEventListener("click", async () => {
+      $run.disabled = true;
+      $log.innerHTML = "";
+      log("🚀 Iniciando migración...\n");
+
+      try {
+        const companiesSnap = await get(ref(db, "companies"));
+        if (!companiesSnap.exists()) {
+          log("❌ No existe /companies en la base.", "err");
+          $run.disabled = false;
+          return;
+        }
+
+        const companies = companiesSnap.val();
+        const ids = Object.keys(companies);
+        log(`📦 Compañías encontradas: ${ids.length} (${ids.join(", ")})\n`, "ok");
+
+        // Para cada compañía, preparamos un patch SOLO con nodos faltantes
+        for (const id of ids) {
+          const c = companies[id] || {};
+          const name = c.name || `Compañía ${id}`;
+          log(`→ ${name} (ID ${id})`);
+
+          const patch = {};
+          let nodosAgregados = 0;
+
+          for (const key of Object.keys(dummy)) {
+            if (c[key] === undefined || c[key] === null) {
+              patch[`companies/${id}/${key}`] = dummy[key];
+              log(`   ✅ Crear ${key}`, "ok");
+              nodosAgregados++;
+            } else {
+              log(`   ⏭️  Existe ${key} (no se toca)`, "warn");
+            }
+          }
+
+          // Si hay algo que crear, lo hacemos en 1 update multipath (atómico)
+          if (Object.keys(patch).length > 0) {
+            await update(ref(db), patch);
+            log(`   ✓ Patch aplicado (${nodosAgregados} nodos)\n`, "ok");
+          } else {
+            log(`   ℹ️  Nada que crear\n`);
+          }
+        }
+
+        log("\n🎉 Migración completada exitosamente!", "ok");
+        log("\n📋 Resumen:", "ok");
+        log(`   - Compañías procesadas: ${ids.length}`, "ok");
+        log(`   - Nodos por compañía: ${Object.keys(dummy).length}`, "ok");
+        log("\n✨ Ahora puedes cerrar esta pestaña y editar desde el dashboard.\n", "ok");
+
+      } catch (e) {
+        log(`\n❌ Error: ${e?.message || e}`, "err");
+        console.error(e);
+      } finally {
+        $run.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
