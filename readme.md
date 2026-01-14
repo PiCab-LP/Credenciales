@@ -16,7 +16,7 @@ Panel web para gestionar credenciales de compañías (juegos), con soporte para 
       - Título de compañía: `<h1 id="companyTitle">`.
       - Buscadores:
         - Local (por juego): `<input id="gameSearch">`.
-        - Global (todas las compañías): `<input id="globalSearch">`.
+        - **Global (todas las secciones de todas las compañías)**: `<input id="globalSearch">`.
       - Tabs:
         ```html
         <div class="tabs-container" id="tabsContainer">
@@ -89,8 +89,12 @@ Panel web para gestionar credenciales de compañías (juegos), con soporte para 
       - `.notas-list`, `.nota-item`, `.nota-header`, `.nota-fecha`, `.nota-texto`
       - `.edit-nota-card`, `.nota-fecha-edit`, `.edit-nota-textarea`
       - `.new-nota-card`, etc.
+    - **Resultados de búsqueda global**:
+      - `.result-section`, `.search-result-card`, `.search-result-title`
+      - `.search-result-text`, `.search-result-date`
+      - `.global-results` con secciones organizadas por tipo
     - Estados vacíos (`.empty-state`).
-    - Modo edición (“tarjetas” de edición genéricas: `.edit-section`, `.edit-metodo-card`, `.edit-input`, `.edit-textarea`, `.delete-btn`, `.add-new-btn`).
+    - Modo edición ("tarjetas" de edición genéricas: `.edit-section`, `.edit-metodo-card`, `.edit-input`, `.edit-textarea`, `.delete-btn`, `.add-new-btn`).
 
 - `app.js`
   - **Estado global:**
@@ -134,10 +138,10 @@ Panel web para gestionar credenciales de compañías (juegos), con soporte para 
     - Modo edición:
       - Inputs editables para username y link.
       - Botones Guardar/Eliminar por juego.
-      - Card de “Nuevo juego” con inputs y botón `Agregar juego`.
+      - Card de "Nuevo juego" con inputs y botón `Agregar juego`.
     - Guardado:
-      - Cada “Guardar” de juego escribe en Firebase y `localStorage`.
-      - “Agregar juego” crea un id incremental, setea `active:true`, `lastModified` hoy, y persiste.
+      - Cada "Guardar" de juego escribe en Firebase y `localStorage`.
+      - "Agregar juego" crea un id incremental, setea `active:true`, `lastModified` hoy, y persiste.
       - `deleteGameFromCompany` elimina juego y borra el nodo en Firebase.
   - **Tabs adicionales:**
     - `renderDeposito(company)`:
@@ -167,11 +171,11 @@ Panel web para gestionar credenciales de compañías (juegos), con soporte para 
       - Ordena las notas por `fecha` desc (más recientes primero).
       - Muestra tarjetas con fecha formateada y texto.
     - Modo edición:
-      - Ordena visualmente, pero mantiene referencia al índice original para no pisar datos.
+      - Ordena visualmente, pero **mantiene referencia al índice original** para evitar sobrescribir datos incorrectos.
       - Para cada nota:
         - Tarjeta con fecha y textarea del texto.
         - Botón de eliminar con `data-type="nota"` y `data-index` apuntando al índice original del array.
-      - Card “Nueva nota” con textarea + botón `Agregar nota`.
+      - Card "Nueva nota" con textarea + botón `Agregar nota`.
       - El click en `Agregar nota`:
         - Crea `{ texto, fecha: new Date().toISOString() }` y lo pushea a `company.notas`.
       - Guardado del tab `notas`:
@@ -180,18 +184,33 @@ Panel web para gestionar credenciales de compañías (juegos), con soporte para 
         - Handler global de `delete-btn`, cuando `data-type="nota"` hace `currentCompany.notas.splice(index, 1)` y re-renderiza notas.
 
   - **Búsquedas:**
-    - Local (`gameSearch`): filtra solo juegos de `currentCompany`.
-    - Global (`globalSearch`): busca en todas las compañías (respetando filtro local), agrupa por compañía, y muestra una lista de tarjetas por compañía.
+    - **Local (`gameSearch`)**: filtra solo juegos de `currentCompany` por nombre o username.
+    - **Global (`globalSearch`)**: 
+      - **Búsqueda completa en TODAS las secciones** de todas las compañías (respeta filtro local).
+      - Busca en:
+        1. **Credenciales**: nombre del juego, username, link
+        2. **Métodos de depósito**: método, proveedor, montos
+        3. **Métodos de cashout**: método, proveedor, montos
+        4. **Consideraciones**: texto completo
+        5. **Promociones**: título y descripción
+        6. **Términos**: link o texto
+        7. **Canales**: nombre y contacto
+        8. **Notas**: texto de las notas
+      - **Resultados organizados por compañía**:
+        - Cada compañía muestra secciones separadas con íconos (🎮 Credenciales, 💰 Depósito, 💸 Cashout, 📋 Consideraciones, 🎁 Promociones, 📜 Términos, 📞 Canales, 📝 Notas).
+        - Incluye contadores por sección (ej: "Promociones (3)").
+        - Textos largos se truncan con preview (primeros 120-200 caracteres).
+        - Notas muestran fecha formateada.
 
   - **Modo edición global:**
     - Botón `editModeBtn`:
       - Si no está en modo edición:
         - Solicita contraseña de admin (una vez) y la cachea en `localStorage`.
-        - Activa `isEditMode = true`, cambia texto a “Guardar”, re-renderiza el tab actual en modo edición.
+        - Activa `isEditMode = true`, cambia texto a "Guardar", re-renderiza el tab actual en modo edición.
       - Si está en modo edición:
-        - Pregunta “¿Guardar los cambios?”
+        - Pregunta "¿Guardar los cambios?"
         - Ejecuta `saveCurrentTab()` en función del tab actual.
-        - Desactiva `isEditMode`, pone texto “Editar” y re-renderiza el tab en modo lectura.
+        - Desactiva `isEditMode`, pone texto "Editar" y re-renderiza el tab en modo lectura.
     - Cambiar de tab mientras `isEditMode === true`:
       - Pregunta si se quiere salir del modo edición (se pierden cambios sin guardar).
 
@@ -204,11 +223,13 @@ Panel web para gestionar credenciales de compañías (juegos), con soporte para 
 3. El usuario:
    - Selecciona compañía en el sidebar.
    - Usa tabs para navegar por información (credenciales, depósito, cashout, etc.).
-   - Puede buscar juegos localmente o globalmente.
+   - Puede buscar:
+     - **Localmente**: juegos de la compañía actual.
+     - **Globalmente**: en TODAS las secciones de TODAS las compañías.
 4. Para editar cualquier tab:
-   - Pulsa “Editar”.
+   - Pulsa "Editar".
    - Modifica lo que necesite en el tab actual.
-   - Pulsa “Guardar” (botón global) para persistir solo ese tab.
+   - Pulsa "Guardar" (botón global) para persistir solo ese tab.
 5. En **Notas**:
    - Agrega notas nuevas desde el tab Notas en modo edición.
    - Edita textos existentes.
@@ -216,3 +237,51 @@ Panel web para gestionar credenciales de compañías (juegos), con soporte para 
    - Guarda el tab para escribir todo en Firebase.
 
 ---
+
+## Mejoras recientes
+
+### ✅ Sistema de búsqueda global mejorado
+- **Antes**: Solo buscaba en credenciales (nombre juego, username).
+- **Ahora**: Busca en **8 secciones diferentes**:
+  - Credenciales, Depósito, Cashout, Consideraciones, Promociones, Términos, Canales, Notas.
+- **Resultados organizados** por compañía con secciones separadas visualmente.
+- **Contadores** de resultados por sección.
+- **Previews** de textos largos.
+
+### ✅ Sistema de notas tipo timeline
+- Notas ordenadas por fecha (más recientes primero).
+- Modo edición con referencia a índices originales (evita sobrescribir datos incorrectos).
+- Fechas formateadas en formato local (es-PE).
+- Agregar/Editar/Eliminar notas con persistencia en Firebase.
+
+---
+
+## Estructura de datos en Firebase
+
+companies/
+{companyId}/
+id: number|string
+name: string
+color: string (hex)
+games/
+{gameId}/
+id: number|string
+name: string
+username: string
+link: string
+active: boolean
+lastModified: string (YYYY-MM-DD)
+metodosDeposito: Array<{metodo, proveedor, montoMinimo, montoMaximo}>
+metodosCashout: Array<{metodo, proveedor, montoMinimo, montoMaximo}>
+consideracionesCashout: string
+promociones: Array<{titulo, descripcion}>
+terminosLink: string
+canales: Array<string> | Array<{nombre, contacto}>
+notas: Array<{texto: string, fecha: ISOString}>
+
+gamesConfig/
+{companyId}_{gameId}/
+companyId: number|string
+gameId: number|string
+active: boolean
+lastModified: string
