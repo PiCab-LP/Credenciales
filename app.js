@@ -16,6 +16,36 @@ document.addEventListener('DOMContentLoaded', () => {
   const localFilterList = document.getElementById('localFilterList');
   const editModeBtn = document.getElementById('editModeBtn');
   const tabsContainer = document.getElementById('tabsContainer');
+  
+  // ==================== THEME TOGGLE ====================
+  let currentTheme = localStorage.getItem('operapediaTheme') || 'dark';
+  const themeToggleInput = document.getElementById('themeToggle');
+
+  // Aplicar tema guardado al cargar
+  const applyTheme = (theme) => {
+    document.documentElement.setAttribute('data-theme', theme);
+    
+    // Actualizar estado del checkbox
+    if (themeToggleInput) {
+      themeToggleInput.checked = theme === 'light';
+    }
+  };
+
+  // Toggle entre temas
+  const toggleTheme = () => {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    applyTheme(currentTheme);
+    localStorage.setItem('operapediaTheme', currentTheme);
+  };
+
+  // Event listener
+  if (themeToggleInput) {
+    themeToggleInput.addEventListener('change', toggleTheme);
+  }
+
+  // Aplicar tema inicial
+  applyTheme(currentTheme);
+  // ==================== FIN THEME TOGGLE ====================
 
   // ========= FILTRO LOCAL =========
   let localCompanyFilter = { companyIds: [] };

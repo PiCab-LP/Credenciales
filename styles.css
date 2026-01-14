@@ -1,3 +1,57 @@
+/* ==================== SISTEMA DE TEMAS ==================== */
+:root {
+  /* Colores de marca (siempre iguales) */
+  --blue: #3B82F6;
+  --green: #10B981;
+  --orange: #F59E0B;
+  --red: #EF4444;
+  --purple: #8B5CF6;
+}
+
+/* Tema oscuro (por defecto) */
+:root,
+[data-theme="dark"] {
+  --bg-primary: #0f0f0f;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #2a2a2a;
+  --bg-quaternary: #1f1f1f;
+  --text-primary: #e5e5e5;
+  --text-secondary: #aaa;
+  --text-tertiary: #666;
+  --border-color: #2a2a2a;
+  --border-color-hover: #3a3a3a;
+  --border-color-focus: #4a4a4a;
+}
+
+/* Tema claro */
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e9ecef;
+  --bg-quaternary: #f1f3f5;
+  --text-primary: #1a1a1a;
+  --text-secondary: #495057;
+  --text-tertiary: #868e96;
+  --border-color: #dee2e6;
+  --border-color-hover: #ced4da;
+  --border-color-focus: #adb5bd;
+}
+
+/* Transición suave para cambio de tema */
+body,
+.sidebar,
+.content,
+.content-header,
+.game-card,
+.company-item,
+.tab,
+.edit-input,
+.edit-textarea,
+input,
+button {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -7,8 +61,8 @@
 /* LAYOUT GENERAL */
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #0f0f0f;
-  color: #e5e5e5;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   height: 100vh;
   margin: 0;
   overflow: hidden;
@@ -22,15 +76,15 @@ body {
 /* SIDEBAR IZQUIERDO */
 .sidebar {
   width: 280px;
-  background: #1a1a1a;
-  border-right: 1px solid #2a2a2a;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
 }
 
 .sidebar-header {
   padding: 20px 30px;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -39,28 +93,28 @@ body {
 .sidebar-header h1 {
   font-size: 18px;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 12px;
 }
 
 .global-search {
   width: 100%;
   padding: 8px 12px;
-  background: #0f0f0f;
-  border: 1px solid #3a3a3a;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color-hover);
   border-radius: 6px;
-  color: #e5e5e5;
+  color: var(--text-primary);
   font-size: 13px;
   outline: none;
   transition: border-color 0.2s;
 }
 
 .global-search:focus {
-  border-color: #3B82F6;
+  border-color: var(--blue);
 }
 
 .global-search::placeholder {
-  color: #666;
+  color: var(--text-tertiary);
 }
 
 .companies-list {
@@ -81,11 +135,11 @@ body {
 }
 
 .company-item:hover {
-  background: #252525;
+  background: var(--bg-quaternary);
 }
 
 .company-item.active {
-  background: #2a2a2a;
+  background: var(--bg-tertiary);
 }
 
 .company-color {
@@ -102,7 +156,7 @@ body {
 
 .company-count {
   font-size: 12px;
-  color: #888;
+  color: var(--text-tertiary);
 }
 
 /* PANEL DERECHO */
@@ -110,13 +164,13 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #0f0f0f;
+  background: var(--bg-primary);
 }
 
 .content-header {
   padding: 20px 30px;
-  border-bottom: 1px solid #2a2a2a;
-  background: #1a1a1a;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -141,21 +195,21 @@ body {
   width: 100%;
   max-width: 400px;
   padding: 10px 14px;
-  background: #0f0f0f;
-  border: 1px solid #3a3a3a;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color-hover);
   border-radius: 6px;
-  color: #e5e5e5;
+  color: var(--text-primary);
   font-size: 14px;
   outline: none;
   transition: border-color 0.2s;
 }
 
 .game-search:focus {
-  border-color: #3B82F6;
+  border-color: var(--blue);
 }
 
 .game-search::placeholder {
-  color: #666;
+  color: var(--text-tertiary);
 }
 
 .games-grid {
@@ -166,8 +220,8 @@ body {
 
 /* GAME CARDS */
 .game-card {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 18px;
   margin-bottom: 12px;
@@ -175,8 +229,8 @@ body {
 }
 
 .game-card:hover {
-  border-color: #3a3a3a;
-  background: #1f1f1f;
+  border-color: var(--border-color-hover);
+  background: var(--bg-quaternary);
 }
 
 .game-card.inactive {
@@ -193,7 +247,7 @@ body {
 .game-name {
   font-size: 16px;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .game-status {
@@ -206,7 +260,7 @@ body {
 .status-toggle {
   width: 40px;
   height: 20px;
-  background: #3a3a3a;
+  background: var(--border-color-hover);
   border-radius: 10px;
   position: relative;
   cursor: pointer;
@@ -214,7 +268,7 @@ body {
 }
 
 .status-toggle.active {
-  background: #10B981;
+  background: var(--green);
 }
 
 .status-toggle::after {
@@ -247,13 +301,13 @@ body {
 
 .detail-label {
   font-size: 12px;
-  color: #aaa;
+  color: var(--text-secondary);
   min-width: 80px;
 }
 
 .detail-value {
   font-size: 14px;
-  color: #f5f5f5;
+  color: var(--text-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   flex: 1;
 }
@@ -261,24 +315,25 @@ body {
 /* BOTONES DE COPIAR (USERNAME) */
 .copy-btn {
   padding: 4px 10px;
-  background: #2a2a2a;
-  border: 1px solid #3a3a3a;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color-hover);
   border-radius: 4px;
-  color: #e5e5e5;
+  color: var(--text-primary);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .copy-btn:hover {
-  background: #3a3a3a;
-  border-color: #4a4a4a;
+  background: var(--border-color-hover);
+  border-color: var(--border-color-focus);
 }
 
 .copy-btn:active,
 .copy-btn.copied {
-  background: #10B981;
-  border-color: #10B981;
+  background: var(--green);
+  border-color: var(--green);
+  color: white;
 }
 
 /* BOTÓN DESHABILITADO CUANDO EL JUEGO ESTÁ APAGADO */
@@ -295,10 +350,10 @@ body {
 /* BOTÓN DE LINK (ABRIR EN NUEVA PESTAÑA) */
 .link-btn {
   padding: 4px 8px;
-  background: #2a2a2a;
-  border: 1px solid #3a3a3a;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color-hover);
   border-radius: 4px;
-  color: #e5e5e5;
+  color: var(--text-primary);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
@@ -309,13 +364,14 @@ body {
 }
 
 .link-btn:hover {
-  background: #3a3a3a;
-  border-color: #4a4a4a;
+  background: var(--border-color-hover);
+  border-color: var(--border-color-focus);
 }
 
 .link-btn:active {
-  background: #3B82F6;
-  border-color: #3B82F6;
+  background: var(--blue);
+  border-color: var(--blue);
+  color: white;
 }
 
 .link-btn.disabled {
@@ -331,7 +387,7 @@ body {
 /* META INFO */
 .last-modified {
   font-size: 11px;
-  color: #666;
+  color: var(--text-tertiary);
   margin-top: 8px;
 }
 
@@ -361,23 +417,23 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f0f0f;
+  background: var(--bg-primary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #3a3a3a;
+  background: var(--border-color-hover);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #4a4a4a;
+  background: var(--border-color-focus);
 }
 
 /* ESTADOS VACÍOS Y RESULTADOS GLOBALES */
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  color: #666;
+  color: var(--text-tertiary);
 }
 
 .empty-state-icon {
@@ -417,13 +473,13 @@ body {
 }
 .local-filter {
   padding: 10px 30px 8px;
-  border-bottom: 1px solid #2a2a2a;
-  background: #181818;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-quaternary);
 }
 
 .local-filter-label {
   font-size: 11px;
-  color: #888;
+  color: var(--text-tertiary);
   margin-bottom: 6px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -444,11 +500,11 @@ body {
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #e5e5e5;
+  color: var(--text-primary);
   padding: 4px 10px;
   border-radius: 999px;
-  border: 1px solid #2f2f2f;
-  background: #151515;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
   cursor: pointer;
   user-select: none;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
@@ -491,10 +547,10 @@ body {
 /* reutiliza el estilo general del layout */
 .edit-btn {
   padding: 4px 10px;
-  background: #2a2a2a;
-  border: 1px solid #3a3a3a;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color-hover);
   border-radius: 4px;
-  color: #e5e5e5;
+  color: var(--text-primary);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
@@ -509,10 +565,12 @@ body {
 }
 
 .edit-btn:not(:disabled):hover {
-  background: #3a3a3a;
-  border-color: #4a4a4a;
+  background: var(--border-color-hover);
+  border-color: var(--border-color-focus);
 }
 
+
+/* Cambios aca */
 .edit-actions {
   margin-top: 10px;
   display: flex;
@@ -540,25 +598,8 @@ body {
   transform: translateY(1px);
 }
 
-.edit-username-input,
-.edit-link-input {
-  flex: 1;
-  padding: 6px 10px;
-  background: #0f0f0f;
-  border: 1px solid #3a3a3a;
-  border-radius: 4px;
-  color: #e5e5e5;
-  font-size: 13px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  outline: none;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
 
-.edit-username-input:focus,
-.edit-link-input:focus {
-  border-color: #3B82F6;
-  background: #111827;
-}
+
 
 /* Botón azul Guardar ya está con .save-edit-btn */
 /* Botón rojo Eliminar */
@@ -591,26 +632,31 @@ body {
 }
 
 /* Inputs del formulario de nuevo juego */
+.edit-username-input,
+.edit-link-input,
 .new-game-name-input,
 .new-game-username-input,
-.new-game-link-input {
+.new-game-link-input,
+.edit-input {
   flex: 1;
   padding: 6px 10px;
-  background: #0f0f0f;
-  border: 1px solid #3a3a3a;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color-hover);
   border-radius: 4px;
-  color: #e5e5e5;
+  color: var(--text-primary);
   font-size: 13px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   outline: none;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
+.edit-username-input:focus,
+.edit-link-input:focus,
 .new-game-name-input:focus,
 .new-game-username-input:focus,
-.new-game-link-input:focus {
-  border-color: #3B82F6;
-  background: #111827;
+.new-game-link-input:focus,
+.edit-input:focus {
+  border-color: var(--blue);
 }
 
 /* Botón Agregar juego (estilo similar a Guardar) */
@@ -655,7 +701,7 @@ body {
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  color: #c5c5c5;
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -664,12 +710,12 @@ body {
 }
 
 .tab:hover {
-  color: #e5e5e5;
+  color: var(--text-primary);
 }
 
 .tab-active {
-  color: #ffffff;
-  border-bottom-color: #3B82F6;
+  color: var(--text-primary);
+  border-bottom-color: var(--blue);
 }
 
 /* ===== CONTENIDO DE TABS ===== */
@@ -694,8 +740,8 @@ body {
 
 /* ===== CONTENIDO DE TABS (info cards) ===== */
 .tab-info-card {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 24px;
   margin-bottom: 16px;
@@ -704,14 +750,14 @@ body {
 .tab-info-card h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 16px;
 }
 
 .tab-info-card p {
   font-size: 14px;
   line-height: 1.6;
-  color: #d1d1d1;
+  color: var(--text-secondary);
 }
 
 .canales-list {
@@ -913,29 +959,17 @@ body {
   display: block;
 }
 
-.edit-input {
-  width: 100%;
-  padding: 10px 14px;
-  background: #0f0f0f;
-  border: 1px solid #3a3a3a;
-  border-radius: 6px;
-  color: #e5e5e5;
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.2s;
-}
 
-.edit-input:focus {
-  border-color: #3B82F6;
-}
+
+
 
 .edit-textarea {
   width: 100%;
   padding: 10px 14px;
-  background: #0f0f0f;
-  border: 1px solid #3a3a3a;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color-hover);
   border-radius: 6px;
-  color: #e5e5e5;
+  color: var(--text-primary);
   font-size: 14px;
   outline: none;
   transition: border-color 0.2s;
@@ -944,7 +978,7 @@ body {
 }
 
 .edit-textarea:focus {
-  border-color: #3B82F6;
+  border-color: var(--blue);
 }
 
 .delete-btn {
@@ -1126,5 +1160,401 @@ body {
 
 .terminos-link-btn:active {
   transform: translateY(0);
+}
+
+
+/* ==================== THEME SWITCH (TOGGLE) ==================== */
+.theme-switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 30px;
+  cursor: pointer;
+}
+
+.theme-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.theme-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 30px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+}
+
+.theme-slider::before {
+  content: "";
+  position: absolute;
+  height: 22px;
+  width: 22px;
+  left: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+}
+
+/* Íconos dentro del switch */
+.theme-icon-light,
+.theme-icon-dark {
+  font-size: 14px;
+  transition: all 0.3s ease;
+  z-index: 1;
+  line-height: 1;
+}
+
+.theme-icon-light {
+  opacity: 0.4;
+}
+
+.theme-icon-dark {
+  opacity: 1;
+}
+
+/* Estado CHECKED (modo claro) */
+.theme-switch input:checked + .theme-slider {
+  background-color: var(--blue);
+  border-color: var(--blue);
+}
+
+.theme-switch input:checked + .theme-slider::before {
+  transform: translateX(30px);
+}
+
+.theme-switch input:checked + .theme-slider .theme-icon-light {
+  opacity: 1;
+}
+
+.theme-switch input:checked + .theme-slider .theme-icon-dark {
+  opacity: 0.4;
+}
+
+/* Hover effect */
+.theme-switch:hover .theme-slider {
+  border-color: var(--blue);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+}
+
+/* Active/Focus */
+.theme-switch input:focus + .theme-slider {
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+}
+
+/* Animación suave del círculo */
+.theme-switch:active .theme-slider::before {
+  width: 26px;
+}
+
+
+/* ===== MÉTODOS DE PAGO (DISEÑO MEJORADO) ===== */
+.metodo-deposito-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 18px;
+  margin-bottom: 16px;
+  transition: all 0.2s;
+}
+
+.metodo-deposito-item:hover {
+  border-color: var(--border-color-hover);
+  background: var(--bg-quaternary);
+}
+
+.metodo-titulo {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--blue);
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.metodo-detalles {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.metodo-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.metodo-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  min-width: 120px;
+}
+
+.metodo-value {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 500;
+  text-align: right;
+}
+
+/* ===== MODO EDICIÓN: MÉTODOS DE PAGO ===== */
+.edit-metodo-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+
+.edit-card-header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.edit-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.edit-card-body label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  display: block;
+}
+
+/* ===== CANALES (MODO EDICIÓN) ===== */
+.edit-canal-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+}
+
+.edit-canal-card .edit-card-header {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+/* ===== PROMOCIONES (DISEÑO ESPACIOSO) ===== */
+.promociones-simple-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.promocion-simple-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 18px;
+  transition: all 0.2s;
+}
+
+.promocion-simple-item:hover {
+  border-color: var(--border-color-hover);
+  background: var(--bg-quaternary);
+}
+
+.promocion-simple-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--green);
+  margin-bottom: 10px;
+}
+
+.promocion-simple-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ===== CANALES DE ATENCIÓN (DISEÑO ESPACIOSO) ===== */
+.canales-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.canal-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px 18px;
+  transition: all 0.2s;
+}
+
+.canal-item:hover {
+  border-color: var(--border-color-hover);
+  background: var(--bg-quaternary);
+}
+
+.canal-nombre {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--orange);
+  margin-bottom: 6px;
+}
+
+.canal-contacto {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* ===== CONSIDERACIONES (DISEÑO ESPACIOSO) ===== */
+.tab-info-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.tab-info-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tab-info-card p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* ===== TÉRMINOS Y CONDICIONES (LINK BUTTON) ===== */
+.terminos-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--blue);
+  border: 1px solid var(--blue);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.terminos-link-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.terminos-link-btn:active {
+  transform: translateY(0);
+}
+
+/* ===== MÉTODOS DE PAGO/CASHOUT (estructuras) ===== */
+.metodos-list {
+  display: grid;
+  gap: 12px;
+}
+
+.metodo-item {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.metodo-header {
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--blue);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.metodo-details {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+
+/* NEW GAME CARD */
+.new-game-card {
+  margin-top: 16px;
+  border-style: dashed;
+  border-color: var(--border-color-hover);
+}
+
+/* DELETE BUTTON */
+.delete-btn {
+  padding: 8px 12px;
+  background: var(--red);
+  border: 1px solid var(--red);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.delete-btn:hover {
+  opacity: 0.9;
+}
+
+/* ADD NEW BUTTON */
+.add-new-btn {
+  padding: 12px 20px;
+  background: var(--green);
+  border: 1px solid var(--green);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.add-new-btn:hover {
+  opacity: 0.9;
+}
+
+.add-new-btn:active {
+  transform: translateY(1px);
+}
+
+/* EDIT SECTION */
+.edit-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.edit-section h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
 }
 
