@@ -1244,54 +1244,147 @@ const renderNotas = (company) => {
     renderGames(currentCompany.games, e.target.value);
   });
 
-  const renderGlobalResults = term => {
-    const t = term.toLowerCase();
-    if (!t) {
-      gamesGrid.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon">📁</div>
-          <p>Selecciona una compañía</p>
-        </div>`;
-      return;
-    }
+const renderGlobalResults = term => {
+  const t = term.toLowerCase();
+  if (!t) {
+    gamesGrid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">📁</div>
+        <p>Selecciona una compañía</p>
+      </div>`;
+    return;
+  }
 
-    const results = [];
-    companies.forEach(company => {
-      const isVisibleByFilter =
-        localCompanyFilter.companyIds.length === 0 ||
-        localCompanyFilter.companyIds.includes(company.id);
-      if (!isVisibleByFilter) return;
+  const results = [];
+  
+  companies.forEach(company => {
+    const isVisibleByFilter =
+      localCompanyFilter.companyIds.length === 0 ||
+      localCompanyFilter.companyIds.includes(company.id);
+    if (!isVisibleByFilter) return;
 
-      const matches = company.games.filter(
-        g =>
-          g.name.toLowerCase().includes(t) ||
-          g.username.toLowerCase().includes(t)
-      );
-      if (matches.length) results.push({ company, games: matches });
+    const matches = {
+      credenciales: [],
+      deposito: [],
+      cashout: [],
+      consideraciones: null,
+      promociones: [],
+      terminos: null,
+      canales: [],
+      notas: []
+    };
+
+    let hasMatches = false;
+
+    // 1. BUSCAR EN CREDENCIALES (juegos)
+    company.games.forEach(g => {
+      if (
+        g.name.toLowerCase().includes(t) ||
+        g.username.toLowerCase().includes(t) ||
+        g.link.toLowerCase().includes(t)
+      ) {
+        matches.credenciales.push(g);
+        hasMatches = true;
+      }
     });
 
-    if (!results.length) {
-      gamesGrid.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon">🔍</div>
-          <p>No se encontraron resultados</p>
-        </div>`;
-      return;
+    // 2. BUSCAR EN MÉTODOS DE DEPÓSITO
+    if (Array.isArray(company.metodosDeposito)) {
+      company.metodosDeposito.forEach(m => {
+        const searchText = `${m.metodo || ''} ${m.proveedor || ''} ${m.montoMinimo || ''} ${m.montoMaximo || ''}`.toLowerCase();
+        if (searchText.includes(t)) {
+          matches.deposito.push(m);
+          hasMatches = true;
+        }
+      });
     }
 
-    gamesGrid.innerHTML = results
-      .map(({ company, games }) => {
-        return `
+    // 3. BUSCAR EN MÉTODOS DE CASHOUT
+    if (Array.isArray(company.metodosCashout)) {
+      company.metodosCashout.forEach(m => {
+        const searchText = `${m.metodo || ''} ${m.proveedor || ''} ${m.montoMinimo || ''} ${m.montoMaximo || ''}`.toLowerCase();
+        if (searchText.includes(t)) {
+          matches.cashout.push(m);
+          hasMatches = true;
+        }
+      });
+    }
+
+    // 4. BUSCAR EN CONSIDERACIONES
+    const consideraciones = company.consideracionesCashout || '';
+    if (consideraciones.toLowerCase().includes(t)) {
+      matches.consideraciones = consideraciones;
+      hasMatches = true;
+    }
+
+    // 5. BUSCAR EN PROMOCIONES
+    if (Array.isArray(company.promociones)) {
+      company.promociones.forEach(p => {
+        const searchText = `${p.titulo || ''} ${p.descripcion || ''}`.toLowerCase();
+        if (searchText.includes(t)) {
+          matches.promociones.push(p);
+          hasMatches = true;
+        }
+      });
+    }
+
+    // 6. BUSCAR EN TÉRMINOS
+    const terminos = company.terminosLink || company.terminosCondiciones || '';
+    if (terminos.toLowerCase().includes(t)) {
+      matches.terminos = terminos;
+      hasMatches = true;
+    }
+
+    // 7. BUSCAR EN CANALES
+    const canales = company.canales || company.canalesAtencion || [];
+    canales.forEach(c => {
+      const searchText = typeof c === 'string' ? c : `${c.nombre || ''} ${c.contacto || ''}`;
+      if (searchText.toLowerCase().includes(t)) {
+        matches.canales.push(c);
+        hasMatches = true;
+      }
+    });
+
+    // 8. BUSCAR EN NOTAS
+    if (Array.isArray(company.notas)) {
+      company.notas.forEach(n => {
+        if (n.texto.toLowerCase().includes(t)) {
+          matches.notas.push(n);
+          hasMatches = true;
+        }
+      });
+    }
+
+    if (hasMatches) {
+      results.push({ company, matches });
+    }
+  });
+
+  if (!results.length) {
+    gamesGrid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">🔍</div>
+        <p>No se encontraron resultados para "${term}"</p>
+      </div>`;
+    return;
+  }
+
+  gamesGrid.innerHTML = results.map(({ company, matches }) => {
+    let html = `
       <div class="global-results">
         <h3>
           <div style="background:${company.color};width:4px;height:20px;display:inline-block;margin-right:8px;"></div>
-          ${company.name} (${games.length})
+          ${company.name}
         </h3>
-        ${games
-          .map(g => {
-            const disabledAttr = g.active ? '' : 'disabled';
-            const disabledClass = g.active ? '' : 'disabled';
-            return `
+    `;
+
+    // CREDENCIALES
+    if (matches.credenciales.length > 0) {
+      html += `<div class="result-section"><h4>🎮 Credenciales (${matches.credenciales.length})</h4>`;
+      matches.credenciales.forEach(g => {
+        const disabledAttr = g.active ? '' : 'disabled';
+        const disabledClass = g.active ? '' : 'disabled';
+        html += `
           <div class="game-card ${g.active ? '' : 'inactive'}">
             <div class="game-header">
               <div class="game-name">${g.name}</div>
@@ -1317,13 +1410,105 @@ const renderNotas = (company) => {
             <div class="last-modified">Última mod: ${g.lastModified}</div>
           </div>
         `;
-          })
-          .join('')}
-      </div>
-    `;
-      })
-      .join('');
-  };
+      });
+      html += '</div>';
+    }
+
+    // DEPÓSITO
+    if (matches.deposito.length > 0) {
+      html += `<div class="result-section"><h4>💰 Métodos de depósito (${matches.deposito.length})</h4>`;
+      matches.deposito.forEach(m => {
+        html += `
+          <div class="search-result-card">
+            <div class="search-result-title">${m.metodo || m.metodoPago || 'Método de depósito'}</div>
+            <div class="search-result-text">Proveedor: ${m.proveedor || 'N/A'}</div>
+            <div class="search-result-text">Monto: ${m.montoMinimo || 'N/A'} - ${m.montoMaximo || 'N/A'}</div>
+          </div>
+        `;
+      });
+      html += '</div>';
+    }
+
+    // CASHOUT
+    if (matches.cashout.length > 0) {
+      html += `<div class="result-section"><h4>💸 Métodos de cashout (${matches.cashout.length})</h4>`;
+      matches.cashout.forEach(m => {
+        html += `
+          <div class="search-result-card">
+            <div class="search-result-title">${m.metodo || m.metodoPago || 'Método de cashout'}</div>
+            <div class="search-result-text">Proveedor: ${m.proveedor || 'N/A'}</div>
+            <div class="search-result-text">Monto: ${m.montoMinimo || 'N/A'} - ${m.montoMaximo || 'N/A'}</div>
+          </div>
+        `;
+      });
+      html += '</div>';
+    }
+
+    // CONSIDERACIONES
+    if (matches.consideraciones) {
+      html += `<div class="result-section"><h4>📋 Consideraciones para cashouts</h4>`;
+      const preview = matches.consideraciones.substring(0, 200) + (matches.consideraciones.length > 200 ? '...' : '');
+      html += `<div class="search-result-card"><div class="search-result-text">${preview}</div></div>`;
+      html += '</div>';
+    }
+
+    // PROMOCIONES
+    if (matches.promociones.length > 0) {
+      html += `<div class="result-section"><h4>🎁 Promociones (${matches.promociones.length})</h4>`;
+      matches.promociones.forEach(p => {
+        html += `
+          <div class="search-result-card">
+            <div class="search-result-title">${p.titulo || 'Promoción'}</div>
+            <div class="search-result-text">${p.descripcion || 'Sin descripción'}</div>
+          </div>
+        `;
+      });
+      html += '</div>';
+    }
+
+    // TÉRMINOS
+    if (matches.terminos) {
+      html += `<div class="result-section"><h4>📜 Términos y condiciones</h4>`;
+      const preview = matches.terminos.substring(0, 150) + (matches.terminos.length > 150 ? '...' : '');
+      html += `<div class="search-result-card"><div class="search-result-text">${preview}</div></div>`;
+      html += '</div>';
+    }
+
+    // CANALES
+    if (matches.canales.length > 0) {
+      html += `<div class="result-section"><h4>📞 Canales de atención (${matches.canales.length})</h4>`;
+      matches.canales.forEach(c => {
+        const texto = typeof c === 'string' ? c : `${c.nombre || 'Canal'}: ${c.contacto || ''}`;
+        html += `<div class="search-result-card"><div class="search-result-text">${texto}</div></div>`;
+      });
+      html += '</div>';
+    }
+
+    // NOTAS
+    if (matches.notas.length > 0) {
+      html += `<div class="result-section"><h4>📝 Notas (${matches.notas.length})</h4>`;
+      matches.notas.forEach(n => {
+        const fechaObj = new Date(n.fecha);
+        const fechaFormateada = fechaObj.toLocaleDateString('es-PE', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        });
+        const preview = n.texto.substring(0, 120) + (n.texto.length > 120 ? '...' : '');
+        html += `
+          <div class="search-result-card">
+            <div class="search-result-date">📌 ${fechaFormateada}</div>
+            <div class="search-result-text">${preview}</div>
+          </div>
+        `;
+      });
+      html += '</div>';
+    }
+
+    html += '</div>';
+    return html;
+  }).join('');
+};
 
   globalSearch.addEventListener('input', e => {
     renderGlobalResults(e.target.value);
