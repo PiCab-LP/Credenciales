@@ -1558,3 +1558,83 @@ body {
   margin-bottom: 8px;
 }
 
+/* ==================== NOTAS (LISTA) ==================== */
+.notas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.nota-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.2s;
+}
+
+.nota-item:hover {
+  border-color: var(--border-color-hover);
+  background: var(--bg-quaternary);
+}
+
+.nota-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.nota-fecha {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.nota-texto {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* MODO EDICIÓN - NOTAS */
+.edit-nota-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.nota-fecha-edit {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--blue);
+  flex: 1;
+}
+
+.edit-nota-textarea {
+  margin-top: 10px;
+}
+
+.new-nota-card {
+  background: var(--bg-tertiary);
+  border: 2px dashed var(--border-color-hover);
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.new-nota-card h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.new-nota-card .edit-textarea {
+  margin-bottom: 12px;
+}

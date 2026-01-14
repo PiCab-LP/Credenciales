@@ -21,29 +21,23 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentTheme = localStorage.getItem('operapediaTheme') || 'dark';
   const themeToggleInput = document.getElementById('themeToggle');
 
-  // Aplicar tema guardado al cargar
   const applyTheme = (theme) => {
     document.documentElement.setAttribute('data-theme', theme);
-    
-    // Actualizar estado del checkbox
     if (themeToggleInput) {
       themeToggleInput.checked = theme === 'light';
     }
   };
 
-  // Toggle entre temas
   const toggleTheme = () => {
     currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
     applyTheme(currentTheme);
     localStorage.setItem('operapediaTheme', currentTheme);
   };
 
-  // Event listener
   if (themeToggleInput) {
     themeToggleInput.addEventListener('change', toggleTheme);
   }
 
-  // Aplicar tema inicial
   applyTheme(currentTheme);
   // ==================== FIN THEME TOGGLE ====================
 
@@ -232,7 +226,6 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     gameSearch.value = '';
     
-    // Salir de modo edición si estaba activo
     if (isEditMode) {
       isEditMode = false;
       editModeBtn.textContent = 'Editar';
@@ -242,12 +235,10 @@ document.addEventListener('DOMContentLoaded', () => {
       editModeBtn.disabled = false;
     }
     
-    // Mostrar tabs
     if (tabsContainer) {
       tabsContainer.style.display = 'flex';
     }
     
-    // Activar tab de credenciales por defecto
     currentTab = 'credenciales';
     switchTab('credenciales');
   };
@@ -255,7 +246,6 @@ document.addEventListener('DOMContentLoaded', () => {
 const switchTab = (tabName) => {
   if (!currentCompany) return;
 
-  // Solo preguntar si está en modo edición Y está cambiando de tab
   if (isEditMode && currentTab !== tabName) {
     const confirmSwitch = confirm('¿Salir del modo edición? Los cambios no guardados se perderán.');
     if (!confirmSwitch) return;
@@ -265,17 +255,14 @@ const switchTab = (tabName) => {
 
   currentTab = tabName;
 
-  // Actualizar tabs activas
   document.querySelectorAll('.tab').forEach(tab => {
     tab.classList.toggle('tab-active', tab.dataset.tab === tabName);
   });
 
-  // Actualizar panes activos
   document.querySelectorAll('.tab-pane').forEach(pane => {
     pane.classList.toggle('tab-pane-active', pane.dataset.pane === tabName);
   });
 
-  // Renderizar contenido según la tab
   switch(tabName) {
     case 'credenciales':
       renderGames(currentCompany.games, '');
@@ -298,10 +285,12 @@ const switchTab = (tabName) => {
     case 'canales':
       renderCanales(currentCompany);
       break;
+    case 'notas':
+      renderNotas(currentCompany);
+      break;
   }
 };
 
-  // Event listeners para tabs
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
       switchTab(tab.dataset.tab);
@@ -447,7 +436,6 @@ const switchTab = (tabName) => {
     const metodos = company.metodosDeposito || [];
     
     if (!isEditMode) {
-      // MODO VISTA
       if (metodos.length === 0) {
         container.innerHTML = `
           <div class="tab-info-card">
@@ -485,7 +473,6 @@ const switchTab = (tabName) => {
       html += '</div>';
       container.innerHTML = html;
     } else {
-      // MODO EDICIÓN
       let html = '<div class="edit-section"><h3>Métodos de depósito</h3>';
       
       metodos.forEach((metodo, index) => {
@@ -551,7 +538,6 @@ const switchTab = (tabName) => {
     const metodos = company.metodosCashout || [];
     
     if (!isEditMode) {
-      // MODO VISTA
       if (metodos.length === 0) {
         container.innerHTML = `
           <div class="tab-info-card">
@@ -589,7 +575,6 @@ const switchTab = (tabName) => {
       html += '</div>';
       container.innerHTML = html;
     } else {
-      // MODO EDICIÓN
       let html = '<div class="edit-section"><h3>Métodos de cashout</h3>';
       
       metodos.forEach((metodo, index) => {
@@ -655,7 +640,6 @@ const switchTab = (tabName) => {
     const consideraciones = company.consideracionesCashout || '';
     
     if (!isEditMode) {
-      // MODO VISTA
       if (!consideraciones) {
         container.innerHTML = `
           <div class="tab-info-card">
@@ -673,7 +657,6 @@ const switchTab = (tabName) => {
         </div>
       `;
     } else {
-      // MODO EDICIÓN
       container.innerHTML = `
         <div class="edit-section">
           <h3>Consideraciones para cashouts</h3>
@@ -696,7 +679,6 @@ const switchTab = (tabName) => {
     const promociones = company.promociones || [];
     
     if (!isEditMode) {
-      // MODO VISTA
       if (promociones.length === 0) {
         container.innerHTML = `
           <div class="tab-info-card">
@@ -722,7 +704,6 @@ const switchTab = (tabName) => {
       html += '</div></div>';
       container.innerHTML = html;
     } else {
-      // MODO EDICIÓN
       let html = '<div class="edit-section"><h3>Promociones activas</h3>';
       
       promociones.forEach((promo, index) => {
@@ -772,7 +753,6 @@ const switchTab = (tabName) => {
     const link = company.terminosLink || company.terminosCondiciones || '';
     
     if (!isEditMode) {
-      // MODO VISTA
       if (!link) {
         container.innerHTML = `
           <div class="tab-info-card">
@@ -802,7 +782,6 @@ const switchTab = (tabName) => {
         `;
       }
     } else {
-      // MODO EDICIÓN
       container.innerHTML = `
         <div class="edit-section">
           <h3>Términos y condiciones</h3>
@@ -827,7 +806,6 @@ const switchTab = (tabName) => {
     const canales = company.canales || company.canalesAtencion || [];
     
     if (!isEditMode) {
-      // MODO VISTA
       if (canales.length === 0) {
         container.innerHTML = `
           <div class="tab-info-card">
@@ -863,7 +841,6 @@ const switchTab = (tabName) => {
       html += '</div></div>';
       container.innerHTML = html;
     } else {
-      // MODO EDICIÓN
       let html = '<div class="edit-section"><h3>Canales de atención</h3>';
       
       canales.forEach((canal, index) => {
@@ -895,6 +872,108 @@ const switchTab = (tabName) => {
     }
   };
 
+// ========= RENDER NOTAS (TIMELINE) =========
+const renderNotas = (company) => {
+  const container = document.getElementById('notasContent');
+  if (!container) return;
+  
+  const notas = Array.isArray(company.notas) ? company.notas : [];
+  
+  if (!isEditMode) {
+    // MODO VISTA
+    if (notas.length === 0) {
+      container.innerHTML = `
+        <div class="tab-info-card">
+          <h3>Notas</h3>
+          <p>No hay notas registradas para esta compañía.</p>
+        </div>
+      `;
+      return;
+    }
+    
+    const sortedNotas = [...notas].sort((a, b) => 
+      new Date(b.fecha) - new Date(a.fecha)
+    );
+    
+    let html = '<div class="notas-list">';
+    sortedNotas.forEach((nota) => {
+      const fechaObj = new Date(nota.fecha);
+      const fechaFormateada = fechaObj.toLocaleDateString('es-PE', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      html += `
+        <div class="nota-item">
+          <div class="nota-header">
+            <span class="nota-fecha">📌 ${fechaFormateada}</span>
+          </div>
+          <div class="nota-texto">${nota.texto}</div>
+        </div>
+      `;
+    });
+    html += '</div>';
+    
+    container.innerHTML = html;
+    
+  } else {
+    // MODO EDICIÓN - USAR ÍNDICES ORIGINALES
+    let html = '<div class="edit-section"><h3>Notas</h3>';
+    
+    // Crear array con índices originales para mapeo correcto
+    const notasConIndice = notas.map((nota, originalIndex) => ({
+      nota,
+      originalIndex
+    })).sort((a, b) => 
+      new Date(b.nota.fecha) - new Date(a.nota.fecha)
+    );
+    
+    notasConIndice.forEach(({ nota, originalIndex }) => {
+      const fechaObj = new Date(nota.fecha);
+      const fechaFormateada = fechaObj.toLocaleDateString('es-PE', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      html += `
+        <div class="edit-nota-card">
+          <div class="edit-card-header">
+            <span class="nota-fecha-edit">📌 ${fechaFormateada}</span>
+            <button class="delete-btn" data-index="${originalIndex}" data-type="nota">🗑️</button>
+          </div>
+          <textarea 
+            class="edit-textarea edit-nota-textarea" 
+            rows="4" 
+            data-index="${originalIndex}"
+          >${nota.texto}</textarea>
+        </div>
+      `;
+    });
+    
+    html += `
+      <div class="new-nota-card">
+        <h4>➕ Nueva nota</h4>
+        <textarea 
+          id="newNotaTextarea"
+          class="edit-textarea" 
+          rows="5"
+          placeholder="Escribe tu nueva nota aquí..."
+        ></textarea>
+        <button class="add-new-btn" data-type="nota">Agregar nota</button>
+      </div>
+    `;
+    
+    html += '</div>';
+    container.innerHTML = html;
+  }
+};
+
   // ========= GUARDAR CAMBIOS POR TAB =========
   const saveCurrentTab = async () => {
     if (!currentCompany) return;
@@ -905,13 +984,12 @@ const switchTab = (tabName) => {
     try {
       switch(currentTab) {
         case 'credenciales':
-          // Ya se guarda individualmente
           break;
           
         case 'deposito':
           const depositoContainer = document.getElementById('depositoContent');
           const metodosDeposito = [];
-          depositoContainer.querySelectorAll('.edit-metodo-card').forEach((card, index) => {
+          depositoContainer.querySelectorAll('.edit-metodo-card').forEach((card) => {
             const metodo = card.querySelector('[data-field="metodo"]').value;
             const proveedor = card.querySelector('[data-field="proveedor"]').value;
             const montoMinimo = card.querySelector('[data-field="montoMinimo"]').value;
@@ -928,7 +1006,7 @@ const switchTab = (tabName) => {
         case 'cashout':
           const cashoutContainer = document.getElementById('cashoutContent');
           const metodosCashout = [];
-          cashoutContainer.querySelectorAll('.edit-metodo-card').forEach((card, index) => {
+          cashoutContainer.querySelectorAll('.edit-metodo-card').forEach((card) => {
             const metodo = card.querySelector('[data-field="metodo"]').value;
             const proveedor = card.querySelector('[data-field="proveedor"]').value;
             const montoMinimo = card.querySelector('[data-field="montoMinimo"]').value;
@@ -954,7 +1032,7 @@ const switchTab = (tabName) => {
         case 'promociones':
           const promocionesContainer = document.getElementById('promocionesContent');
           const promociones = [];
-          promocionesContainer.querySelectorAll('.edit-metodo-card').forEach((card, index) => {
+          promocionesContainer.querySelectorAll('.edit-metodo-card').forEach((card) => {
             const titulo = card.querySelector('[data-field="titulo"]').value;
             const descripcion = card.querySelector('[data-field="descripcion"]').value;
             promociones.push({ titulo, descripcion });
@@ -985,6 +1063,21 @@ const switchTab = (tabName) => {
           await window.firebaseSet(
             window.firebaseRef(window.db, `companies/${currentCompany.id}/canales`),
             canales
+          );
+          break;
+          
+        case 'notas':
+          const notaTextareas = document.querySelectorAll('.edit-nota-textarea');
+          notaTextareas.forEach(textarea => {
+            const index = parseInt(textarea.dataset.index);
+            if (currentCompany.notas[index]) {
+              currentCompany.notas[index].texto = textarea.value.trim();
+            }
+          });
+          
+          await window.firebaseSet(
+            window.firebaseRef(window.db, `companies/${currentCompany.id}/notas`),
+            currentCompany.notas || []
           );
           break;
       }
@@ -1029,6 +1122,34 @@ const switchTab = (tabName) => {
           currentCompany.canales.push('');
           renderCanales(currentCompany);
           break;
+        case 'nota':
+          const textarea = document.getElementById('newNotaTextarea');
+          if (!textarea) return;
+          
+          const textoNota = textarea.value.trim();
+          if (!textoNota) {
+            toast.textContent = 'Escribe algo en la nota';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 1500);
+            return;
+          }
+          
+          const nuevaNota = {
+            texto: textoNota,
+            fecha: new Date().toISOString()
+          };
+          
+          if (!Array.isArray(currentCompany.notas)) {
+            currentCompany.notas = [];
+          }
+          
+          currentCompany.notas.push(nuevaNota);
+          renderNotas(currentCompany);
+          
+          toast.textContent = '✅ Nota agregada (recuerda guardar)';
+          toast.classList.add('show');
+          setTimeout(() => toast.classList.remove('show'), 1500);
+          break;
       }
     }
     
@@ -1056,6 +1177,16 @@ const switchTab = (tabName) => {
         case 'canales':
           currentCompany.canales.splice(index, 1);
           renderCanales(currentCompany);
+          break;
+        case 'nota':
+          if (Array.isArray(currentCompany.notas)) {
+            currentCompany.notas.splice(index, 1);
+            renderNotas(currentCompany);
+            
+            toast.textContent = '🗑️ Nota eliminada (recuerda guardar)';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 1500);
+          }
           break;
       }
     }
@@ -1476,7 +1607,6 @@ const switchTab = (tabName) => {
         isEditMode = true;
         editModeBtn.textContent = 'Guardar';
         
-        // Re-renderizar la tab actual en modo edición
         switchTab(currentTab);
         
       } else {
@@ -1489,7 +1619,6 @@ const switchTab = (tabName) => {
         isEditMode = false;
         editModeBtn.textContent = 'Editar';
         
-        // Re-renderizar en modo vista
         switchTab(currentTab);
       }
     });
