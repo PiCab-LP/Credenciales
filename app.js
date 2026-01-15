@@ -1786,6 +1786,7 @@ const renderGlobalResults = term => {
             adminLoggedIn = true;
             localStorage.setItem('credentialsAdminLoggedIn', 'true');
             alert('Acceso concedido. Ahora puedes editar.');
+            updateAddCompanyBtnVisibility();
           }
         }
 
@@ -1859,6 +1860,223 @@ const renderGlobalResults = term => {
       selectCompany(target);
     }
   };
+
+  // ==================== AGREGAR COMPAÑÍA ==================== 
+const addCompanyBtn = document.getElementById('addCompanyBtn');
+
+// Crear modal HTML
+const createCompanyModal = () => {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'addCompanyModal';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">➕ Nueva compañía</h2>
+        <button class="modal-close" id="closeModalBtn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-field">
+          <label for="companyName">Nombre de la compañía *</label>
+          <input type="text" id="companyName" placeholder="Ej: Betsson, Inkabet, etc." />
+        </div>
+        
+        <div class="modal-field">
+          <label for="companyColor">Color identificador *</label>
+          <div class="color-picker-container">
+            <div class="color-preview" id="colorPreview" style="background: #3b82f6;"></div>
+            <input type="text" id="companyColor" value="#3b82f6" placeholder="#3b82f6" />
+          </div>
+          <div class="color-suggestions" id="colorSuggestions"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" id="cancelModalBtn">Cancelar</button>
+        <button class="modal-btn modal-btn-primary" id="createCompanyBtn">Crear compañía</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  return modal;
+};
+
+// Paleta de colores sugeridos
+const coloresSugeridos = [
+  '#3b82f6', // Azul
+  '#ef4444', // Rojo
+  '#10b981', // Verde
+  '#f59e0b', // Naranja
+  '#8b5cf6', // Morado
+  '#ec4899', // Rosa
+  '#06b6d4', // Cyan
+  '#84cc16', // Lima
+  '#f97316', // Naranja oscuro
+  '#6366f1', // Índigo
+  '#14b8a6', // Teal
+  '#f43f5e', // Rosa rojo
+];
+
+// Renderizar sugerencias de color
+const renderColorSuggestions = (container, inputElement, previewElement) => {
+  container.innerHTML = '';
+  coloresSugeridos.forEach(color => {
+    const suggestion = document.createElement('div');
+    suggestion.className = 'color-suggestion';
+    suggestion.style.background = color;
+    suggestion.title = color;
+    suggestion.addEventListener('click', () => {
+      inputElement.value = color;
+      previewElement.style.background = color;
+    });
+    container.appendChild(suggestion);
+  });
+};
+
+// Abrir modal
+const openAddCompanyModal = () => {
+  let modal = document.getElementById('addCompanyModal');
+  if (!modal) {
+    modal = createCompanyModal();
+  }
+  
+  const nameInput = document.getElementById('companyName');
+  const colorInput = document.getElementById('companyColor');
+  const colorPreview = document.getElementById('colorPreview');
+  const colorSuggestions = document.getElementById('colorSuggestions');
+  const closeBtn = document.getElementById('closeModalBtn');
+  const cancelBtn = document.getElementById('cancelModalBtn');
+  const createBtn = document.getElementById('createCompanyBtn');
+  
+  // Reset inputs
+  nameInput.value = '';
+  colorInput.value = '#3b82f6';
+  colorPreview.style.background = '#3b82f6';
+  
+  // Renderizar sugerencias
+  renderColorSuggestions(colorSuggestions, colorInput, colorPreview);
+  
+  // Actualizar preview en tiempo real
+  colorInput.addEventListener('input', () => {
+    const color = colorInput.value.trim();
+    if (/^#[0-9A-Fa-f]{6}$/.test(color)) {
+      colorPreview.style.background = color;
+    }
+  });
+  
+  // Cerrar modal
+  const closeModal = () => {
+    modal.classList.remove('show');
+  };
+  
+  closeBtn.onclick = closeModal;
+  cancelBtn.onclick = closeModal;
+  
+  // Click fuera del modal
+  modal.onclick = (e) => {
+    if (e.target === modal) closeModal();
+  };
+  
+  // Crear compañía
+  createBtn.onclick = async () => {
+    const name = nameInput.value.trim();
+    const color = colorInput.value.trim();
+    
+    // Validaciones
+    if (!name) {
+      toast.textContent = '⚠️ El nombre es obligatorio';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+      return;
+    }
+    
+    if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
+      toast.textContent = '⚠️ Color inválido. Usa formato #RRGGBB';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+      return;
+    }
+    
+    // Verificar nombre duplicado
+    if (companies.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+      toast.textContent = '⚠️ Ya existe una compañía con ese nombre';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+      return;
+    }
+    
+    // Obtener el próximo ID disponible
+    const maxId = companies.length > 0 
+      ? Math.max(...companies.map(c => Number(c.id) || 0)) 
+      : 0;
+    const newId = maxId + 1;
+    
+    // Crear estructura completa
+    const newCompany = {
+      id: newId,
+      name: name,
+      color: color,
+      games: {},
+      metodosDeposito: [],
+      metodosCashout: [],
+      consideracionesCashout: '',
+      promociones: [],
+      terminosLink: '',
+      canales: [],
+      notas: [
+        {
+          texto: `Compañía "${name}" creada en el sistema`,
+          fecha: new Date().toISOString()
+        }
+      ]
+    };
+    
+    try {
+      // Deshabilitar botón mientras se crea
+      createBtn.disabled = true;
+      createBtn.textContent = 'Creando...';
+      
+      // Guardar en Firebase
+      await window.firebaseSet(
+        window.firebaseRef(window.db, `companies/${newId}`),
+        newCompany
+      );
+      
+      toast.textContent = `✅ Compañía "${name}" creada correctamente`;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+      
+      closeModal();
+      
+    } catch (error) {
+      console.error('Error al crear compañía:', error);
+      toast.textContent = '❌ Error al crear compañía';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+      
+      createBtn.disabled = false;
+      createBtn.textContent = 'Crear compañía';
+    }
+  };
+  
+  modal.classList.add('show');
+  nameInput.focus();
+};
+
+// Event listener del botón
+if (addCompanyBtn) {
+  addCompanyBtn.addEventListener('click', openAddCompanyModal);
+}
+
+// Mostrar botón solo si está logueado como admin
+const updateAddCompanyBtnVisibility = () => {
+  if (addCompanyBtn) {
+    addCompanyBtn.style.display = adminLoggedIn ? 'block' : 'none';
+  }
+};
+
+// Llamar después de login admin
+updateAddCompanyBtnVisibility();
+
 
   // Cargar companies desde Firebase y arrancar
   if (window.companiesRef && window.firebaseOnValue) {
