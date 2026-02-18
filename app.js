@@ -229,6 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isEditMode) {
       isEditMode = false;
       editModeBtn.textContent = 'Editar';
+      updateAddCompanyBtnVisibility();
     }
     
     if (editModeBtn) {
@@ -1792,6 +1793,7 @@ const renderGlobalResults = term => {
 
         isEditMode = true;
         editModeBtn.textContent = 'Guardar';
+        updateAddCompanyBtnVisibility();
         
         switchTab(currentTab);
         
@@ -1804,6 +1806,7 @@ const renderGlobalResults = term => {
         
         isEditMode = false;
         editModeBtn.textContent = 'Editar';
+        updateAddCompanyBtnVisibility();
         
         switchTab(currentTab);
       }
@@ -1814,6 +1817,8 @@ const renderGlobalResults = term => {
   const initApp = () => {
     const storedAdmin = localStorage.getItem('credentialsAdminLoggedIn');
     adminLoggedIn = storedAdmin === 'true';
+    
+    updateAddCompanyBtnVisibility();
 
     loadLocalFilter();
     loadState();
@@ -2041,6 +2046,8 @@ const openAddCompanyModal = () => {
         newCompany
       );
       
+      updateAddCompanyBtnVisibility();
+
       toast.textContent = `✅ Compañía "${name}" creada correctamente`;
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 2000);
@@ -2070,7 +2077,8 @@ if (addCompanyBtn) {
 // Mostrar botón solo si está logueado como admin
 const updateAddCompanyBtnVisibility = () => {
   if (addCompanyBtn) {
-    addCompanyBtn.style.display = adminLoggedIn ? 'block' : 'none';
+    const shouldShow = adminLoggedIn && isEditMode;
+    addCompanyBtn.style.display = shouldShow ? 'block' : 'none';
   }
 };
 
@@ -2081,6 +2089,10 @@ updateAddCompanyBtnVisibility();
   // Cargar companies desde Firebase y arrancar
   if (window.companiesRef && window.firebaseOnValue) {
     window.firebaseOnValue(window.companiesRef, snapshot => {
+
+      const storedAdmin = localStorage.getItem('credentialsAdminLoggedIn');
+      adminLoggedIn = storedAdmin === 'true';
+
       const data = snapshot.val() || {};
 
       companies = Object.entries(data).map(([companyKey, companyValue]) => {
