@@ -596,11 +596,16 @@ document.addEventListener('DOMContentLoaded', () => {
     switchTab('credenciales');
   };
 
-  const switchTab = (tabName) => {
+  const switchTab = async (tabName) => {
     if (!currentCompany) return;
 
     if (isEditMode && currentTab !== tabName) {
-      const confirmSwitch = confirm('¿Salir del modo edición? Los cambios no guardados se perderán.');
+      const confirmSwitch = await showConfirmModal(
+        '¿Salir del modo edición?',
+        'Los cambios no guardados se perderán.',
+        'Salir',
+        'Cancelar'
+      );
       if (!confirmSwitch) return;
       isEditMode = false;
       editModeBtn.textContent = 'Editar';
