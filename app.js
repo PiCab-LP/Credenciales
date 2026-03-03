@@ -16,7 +16,83 @@ document.addEventListener('DOMContentLoaded', () => {
   const localFilterList = document.getElementById('localFilterList');
   const editModeBtn = document.getElementById('editModeBtn');
   const tabsContainer = document.getElementById('tabsContainer');
-  
+
+  // ==================== CUSTOM CONFIRM MODAL ====================
+  const showConfirmModal = (title, message, acceptText = 'Aceptar', cancelText = 'Cancelar') => {
+    return new Promise(resolve => {
+      // Remove any existing confirm modal
+      const existing = document.getElementById('customConfirmModal');
+      if (existing) existing.remove();
+
+      const overlay = document.createElement('div');
+      overlay.id = 'customConfirmModal';
+      overlay.className = 'confirm-overlay';
+      overlay.innerHTML = `
+        <div class="confirm-box">
+          <div class="confirm-icon">⚠️</div>
+          <h3 class="confirm-title">${title}</h3>
+          <p class="confirm-message">${message}</p>
+          <div class="confirm-actions">
+            <button class="confirm-btn confirm-btn-cancel">${cancelText}</button>
+            <button class="confirm-btn confirm-btn-accept">${acceptText}</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      requestAnimationFrame(() => overlay.classList.add('show'));
+
+      const close = (result) => {
+        overlay.classList.remove('show');
+        setTimeout(() => overlay.remove(), 200);
+        resolve(result);
+      };
+
+      overlay.querySelector('.confirm-btn-accept').addEventListener('click', () => close(true));
+      overlay.querySelector('.confirm-btn-cancel').addEventListener('click', () => close(false));
+      overlay.addEventListener('click', e => { if (e.target === overlay) close(false); });
+    });
+  };
+
+  // ==================== CUSTOM PASSWORD MODAL ====================
+  const showPasswordModal = (title, message) => {
+    return new Promise(resolve => {
+      const existing = document.getElementById('customConfirmModal');
+      if (existing) existing.remove();
+
+      const overlay = document.createElement('div');
+      overlay.id = 'customConfirmModal';
+      overlay.className = 'confirm-overlay';
+      overlay.innerHTML = `
+        <div class="confirm-box">
+          <div class="confirm-icon">🔒</div>
+          <h3 class="confirm-title">${title}</h3>
+          <p class="confirm-message">${message}</p>
+          <input type="password" class="confirm-password-input" placeholder="Contraseña" autocomplete="off" />
+          <div class="confirm-actions">
+            <button class="confirm-btn confirm-btn-cancel">Cancelar</button>
+            <button class="confirm-btn confirm-btn-accept">Confirmar</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      requestAnimationFrame(() => overlay.classList.add('show'));
+
+      const input = overlay.querySelector('.confirm-password-input');
+      setTimeout(() => input.focus(), 100);
+
+      const close = (result) => {
+        overlay.classList.remove('show');
+        setTimeout(() => overlay.remove(), 200);
+        resolve(result);
+      };
+
+      overlay.querySelector('.confirm-btn-accept').addEventListener('click', () => close(input.value));
+      overlay.querySelector('.confirm-btn-cancel').addEventListener('click', () => close(null));
+      overlay.addEventListener('click', e => { if (e.target === overlay) close(null); });
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') close(input.value); });
+    });
+  };
+
   // ==================== THEME TOGGLE ====================
   let currentTheme = localStorage.getItem('operapediaTheme') || 'dark';
   const themeToggleInput = document.getElementById('themeToggle');
@@ -40,6 +116,115 @@ document.addEventListener('DOMContentLoaded', () => {
 
   applyTheme(currentTheme);
   // ==================== FIN THEME TOGGLE ====================
+
+  // ==================== SIDEBAR COMPANY SEARCH ====================
+  const sidebarSearch = document.getElementById('sidebarSearch');
+  let sidebarSearchTerm = '';
+
+  if (sidebarSearch) {
+    sidebarSearch.addEventListener('input', e => {
+      sidebarSearchTerm = e.target.value.toLowerCase().trim();
+      renderCompanies();
+    });
+  }
+
+  // ==================== SEARCH FILTERS PANEL ====================
+  const searchFiltersPanel = document.getElementById('searchFilters');
+  let activeSearchCompanyIds = []; // empty = all companies
+
+  // Load saved category filters from localStorage (default: empty = search all)
+  let activeCategoryFilters = [];
+  const savedCatFilters = localStorage.getItem('operapediaCategoryFilters');
+  if (savedCatFilters) {
+    try { activeCategoryFilters = JSON.parse(savedCatFilters); } catch { activeCategoryFilters = []; }
+  }
+
+  const saveCategoryFilters = () => {
+    localStorage.setItem('operapediaCategoryFilters', JSON.stringify(activeCategoryFilters));
+  };
+
+  // Restore chip active classes on load
+  document.querySelectorAll('.filter-chip[data-category]').forEach(chip => {
+    if (activeCategoryFilters.includes(chip.dataset.category)) {
+      chip.classList.add('active');
+    }
+  });
+
+  // Show/hide filter panel when omnibar is focused
+  if (globalSearch && searchFiltersPanel) {
+    globalSearch.addEventListener('focus', () => {
+      searchFiltersPanel.classList.add('visible');
+    });
+
+    // Close panel clicking outside
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.omnibar-wrapper')) {
+        searchFiltersPanel.classList.remove('visible');
+      }
+    });
+  }
+
+  // Category filter chip toggles
+  document.querySelectorAll('.filter-chip[data-category]').forEach(chip => {
+    chip.addEventListener('click', e => {
+      e.stopPropagation();
+      const cat = chip.dataset.category;
+      if (chip.classList.contains('active')) {
+        chip.classList.remove('active');
+        activeCategoryFilters = activeCategoryFilters.filter(c => c !== cat);
+      } else {
+        chip.classList.add('active');
+        activeCategoryFilters.push(cat);
+      }
+      saveCategoryFilters();
+      if (globalSearch.value.trim()) {
+        renderGlobalResults(globalSearch.value);
+      }
+    });
+  });
+
+  // ==================== PARTNER FILTER ====================
+  const PARTNERS = ['Dragon', 'Tierlock', 'Taparcadia', 'Wysaro'];
+  const PARTNER_ICONS = { Dragon: '🐲', Tierlock: '🔒', Taparcadia: '🎮', Wysaro: '⭐' };
+
+  // Load saved partner filters from localStorage (default: empty = show all)
+  let activePartnerFilters = [];
+  const savedPartnerFilters = localStorage.getItem('operapediaPartnerFilters');
+  if (savedPartnerFilters) {
+    try { activePartnerFilters = JSON.parse(savedPartnerFilters); } catch { activePartnerFilters = []; }
+  }
+
+  const savePartnerFilters = () => {
+    localStorage.setItem('operapediaPartnerFilters', JSON.stringify(activePartnerFilters));
+  };
+
+  // Restore partner chip active classes on load
+  document.querySelectorAll('.partner-chip[data-partner]').forEach(chip => {
+    if (activePartnerFilters.includes(chip.dataset.partner)) {
+      chip.classList.add('active');
+    }
+  });
+
+  // Partner chip toggle handlers
+  document.querySelectorAll('.partner-chip[data-partner]').forEach(chip => {
+    chip.addEventListener('click', e => {
+      e.stopPropagation();
+      const partner = chip.dataset.partner;
+      if (chip.classList.contains('active')) {
+        chip.classList.remove('active');
+        activePartnerFilters = activePartnerFilters.filter(p => p !== partner);
+      } else {
+        chip.classList.add('active');
+        activePartnerFilters.push(partner);
+      }
+      savePartnerFilters();
+      // Re-render sidebar and re-trigger search
+      renderCompanies();
+      if (globalSearch.value.trim()) {
+        renderGlobalResults(globalSearch.value);
+      }
+    });
+  });
 
   // ========= FILTRO LOCAL =========
   let localCompanyFilter = { companyIds: [] };
@@ -171,20 +356,46 @@ document.addEventListener('DOMContentLoaded', () => {
     companiesList.innerHTML = '';
 
     const visibleCompanies = companies.filter(c => {
-      if (localCompanyFilter.companyIds.length === 0) return true;
-      return localCompanyFilter.companyIds.includes(c.id);
+      const passesLocalFilter = localCompanyFilter.companyIds.length === 0 || localCompanyFilter.companyIds.includes(c.id);
+      const passesSidebarSearch = !sidebarSearchTerm || c.name.toLowerCase().includes(sidebarSearchTerm);
+      const passesPartnerFilter = activePartnerFilters.length === 0 || activePartnerFilters.includes(c.partner || '');
+      return passesLocalFilter && passesSidebarSearch && passesPartnerFilter;
     });
 
     visibleCompanies.forEach(company => {
       const activeCount = company.games.filter(g => g.active).length;
+      const partnerTag = company.partner ? `<span class="partner-badge-sm" data-partner="${company.partner}">${company.partner}</span>` : '';
       const item = document.createElement('div');
       item.className = 'company-item';
       item.innerHTML = `
         <div class="company-color" style="background:${company.color}"></div>
         <span class="company-name">${company.name}</span>
+        ${partnerTag}
         <span class="company-count">${activeCount}</span>
       `;
       item.addEventListener('click', () => {
+        // Guard: block company switch while in edit mode
+        if (isEditMode && currentCompany && String(currentCompany.id) !== String(company.id)) {
+          showConfirmModal(
+            '¿Guardar cambios?',
+            'Estás en modo edición. ¿Deseas guardar los cambios antes de cambiar de compañía?',
+            'Guardar y cambiar',
+            'Cancelar'
+          ).then(accepted => {
+            if (accepted) {
+              saveCurrentTab();
+              isEditMode = false;
+              if (editModeBtn) {
+                editModeBtn.innerHTML = '<span class="btn-edit-icon">✏️</span><span class="btn-edit-label">Editar</span>';
+              }
+              updateAddCompanyBtnVisibility();
+              document.querySelectorAll('.company-item').forEach(el => el.classList.remove('active'));
+              item.classList.add('active');
+              selectCompany(company);
+            }
+          });
+          return;
+        }
         document
           .querySelectorAll('.company-item')
           .forEach(el => el.classList.remove('active'));
@@ -193,6 +404,10 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       companiesList.appendChild(item);
     });
+
+    // Update sidebar badge
+    const badge = document.getElementById('companyCountBadge');
+    if (badge) badge.textContent = visibleCompanies.length;
 
     if (
       currentCompany &&
@@ -215,6 +430,131 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
     }
   };
+  // ========= PARTNER BADGE (reusable) =========
+  const updatePartnerBadge = () => {
+    const partnerBadge = document.getElementById('partnerBadge');
+    if (!partnerBadge || !currentCompany) return;
+
+    const company = currentCompany;
+    if (company.partner) {
+      const icon = PARTNER_ICONS[company.partner] || '';
+      partnerBadge.textContent = `${icon} ${company.partner}`;
+      partnerBadge.setAttribute('data-partner', company.partner);
+      partnerBadge.style.display = 'inline-flex';
+      partnerBadge.title = isEditMode ? 'Clic para cambiar partner' : '';
+      partnerBadge.style.cursor = isEditMode ? 'pointer' : 'default';
+    } else {
+      if (isEditMode) {
+        partnerBadge.textContent = '+ Asignar partner';
+        partnerBadge.removeAttribute('data-partner');
+        partnerBadge.style.display = 'inline-flex';
+        partnerBadge.style.cursor = 'pointer';
+        partnerBadge.title = 'Clic para asignar partner';
+      } else {
+        partnerBadge.style.display = 'none';
+      }
+    }
+
+    // Click handler for editing partner
+    partnerBadge.onclick = async () => {
+      if (!isEditMode || !currentCompany) return;
+      const sel = document.createElement('select');
+      sel.style.cssText = 'padding:4px 10px;background:var(--bg-input);border:1px solid var(--accent);border-radius:var(--radius-sm);color:var(--text-primary);font-size:12px;font-family:inherit;outline:none;';
+      sel.innerHTML = `<option value="">Sin partner</option>` +
+        PARTNERS.map(p => `<option value="${p}" ${company.partner === p ? 'selected' : ''}>${PARTNER_ICONS[p]} ${p}</option>`).join('');
+      partnerBadge.replaceWith(sel);
+      sel.focus();
+
+      const finishEdit = async () => {
+        const newPartner = sel.value;
+        company.partner = newPartner || '';
+        try {
+          await window.firebaseSet(
+            window.firebaseRef(window.db, `companies/${company.id}/partner`),
+            newPartner || ''
+          );
+        } catch (e) { console.error('Error saving partner', e); }
+        sel.replaceWith(partnerBadge);
+        updatePartnerBadge();
+        renderCompanies();
+      };
+
+      sel.addEventListener('change', finishEdit);
+      sel.addEventListener('blur', finishEdit);
+    };
+  };
+
+  // ========= DELETE COMPANY =========
+  const deleteCompanyBtn = document.getElementById('deleteCompanyBtn');
+
+  const updateDeleteBtn = () => {
+    if (!deleteCompanyBtn) return;
+    deleteCompanyBtn.style.display = (isEditMode && currentCompany) ? 'inline-flex' : 'none';
+  };
+
+  if (deleteCompanyBtn) {
+    deleteCompanyBtn.addEventListener('click', async () => {
+      if (!currentCompany) return;
+
+      const confirmed = await showConfirmModal(
+        '¿Eliminar compañía?',
+        `Se eliminará permanentemente "${currentCompany.name}" y todos sus datos. Esta acción no se puede deshacer.`,
+        'Eliminar',
+        'Cancelar'
+      );
+      if (!confirmed) return;
+
+      // Ask for supervisor password
+      const pwd = await showPasswordModal(
+        'Contraseña de supervisor',
+        'Ingresa la contraseña de supervisor para confirmar la eliminación.'
+      );
+      if (!pwd) return;
+      if (pwd !== ADMIN_PASSWORD) {
+        toast.textContent = '❌ Contraseña incorrecta';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+        return;
+      }
+
+      try {
+        const deletedName = currentCompany.name;
+        // Remove from Firebase
+        await window.firebaseSet(
+          window.firebaseRef(window.db, `companies/${currentCompany.id}`),
+          null
+        );
+
+        // Reset UI
+        currentCompany = null;
+        isEditMode = false;
+        if (editModeBtn) {
+          editModeBtn.innerHTML = '<span class="btn-edit-icon">✏️</span><span class="btn-edit-label">Editar</span>';
+          editModeBtn.disabled = true;
+        }
+        companyTitle.textContent = 'Selecciona una compañía';
+        if (tabsContainer) tabsContainer.style.display = 'none';
+        deleteCompanyBtn.style.display = 'none';
+        const partnerBadge = document.getElementById('partnerBadge');
+        if (partnerBadge) partnerBadge.style.display = 'none';
+        gamesGrid.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📁</div>
+            <p>Selecciona una compañía para ver sus credenciales</p>
+          </div>`;
+        updateAddCompanyBtnVisibility();
+
+        toast.textContent = `✅ Compañía "${deletedName}" eliminada correctamente`;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+      } catch (error) {
+        console.error('Error al eliminar compañía:', error);
+        toast.textContent = '❌ Error al eliminar compañía';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+      }
+    });
+  }
 
   // ========= SELECCIÓN DE COMPAÑÍA Y TABS =========
   const selectCompany = company => {
@@ -224,73 +564,85 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="company-title-bar" style="background:${company.color}"></div>
       ${company.name}
     `;
+    // Update partner badge in header
+    updatePartnerBadge();
+    updateDeleteBtn();
+    // Update breadcrumb
+    const breadcrumb = document.getElementById('breadcrumb');
+    if (breadcrumb) {
+      breadcrumb.innerHTML = `
+        <span class="breadcrumb-item">Inicio</span>
+        <span class="breadcrumb-separator">›</span>
+        <span class="breadcrumb-current">${company.name}</span>
+      `;
+    }
     gameSearch.value = '';
-    
+
     if (isEditMode) {
       isEditMode = false;
       editModeBtn.textContent = 'Editar';
       updateAddCompanyBtnVisibility();
     }
-    
+
     if (editModeBtn) {
       editModeBtn.disabled = false;
     }
-    
+
     if (tabsContainer) {
       tabsContainer.style.display = 'flex';
     }
-    
+
     currentTab = 'credenciales';
     switchTab('credenciales');
   };
 
-const switchTab = (tabName) => {
-  if (!currentCompany) return;
+  const switchTab = (tabName) => {
+    if (!currentCompany) return;
 
-  if (isEditMode && currentTab !== tabName) {
-    const confirmSwitch = confirm('¿Salir del modo edición? Los cambios no guardados se perderán.');
-    if (!confirmSwitch) return;
-    isEditMode = false;
-    editModeBtn.textContent = 'Editar';
-  }
+    if (isEditMode && currentTab !== tabName) {
+      const confirmSwitch = confirm('¿Salir del modo edición? Los cambios no guardados se perderán.');
+      if (!confirmSwitch) return;
+      isEditMode = false;
+      editModeBtn.textContent = 'Editar';
+    }
 
-  currentTab = tabName;
+    currentTab = tabName;
 
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.classList.toggle('tab-active', tab.dataset.tab === tabName);
-  });
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.classList.toggle('tab-active', tab.dataset.tab === tabName);
+    });
 
-  document.querySelectorAll('.tab-pane').forEach(pane => {
-    pane.classList.toggle('tab-pane-active', pane.dataset.pane === tabName);
-  });
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+      pane.classList.toggle('tab-pane-active', pane.dataset.pane === tabName);
+    });
 
-  switch(tabName) {
-    case 'credenciales':
-      renderGames(currentCompany.games, '');
-      break;
-    case 'deposito':
-      renderDeposito(currentCompany);
-      break;
-    case 'cashout':
-      renderCashout(currentCompany);
-      break;
-    case 'consideraciones':
-      renderConsideraciones(currentCompany);
-      break;
-    case 'promociones':
-      renderPromociones(currentCompany);
-      break;
-    case 'terminos':
-      renderTerminos(currentCompany);
-      break;
-    case 'canales':
-      renderCanales(currentCompany);
-      break;
-    case 'notas':
-      renderNotas(currentCompany);
-      break;
-  }
-};
+    switch (tabName) {
+      case 'credenciales':
+        renderGames(currentCompany.games, '');
+        break;
+      case 'deposito':
+        renderDeposito(currentCompany);
+        break;
+      case 'cashout':
+        renderCashout(currentCompany);
+        break;
+      case 'consideraciones':
+        renderConsideraciones(currentCompany);
+        break;
+      case 'promociones':
+        renderPromociones(currentCompany);
+        break;
+      case 'terminos':
+        renderTerminos(currentCompany);
+        break;
+      case 'canales':
+        renderCanales(currentCompany);
+        break;
+      case 'notas':
+        renderNotas(currentCompany);
+        break;
+    }
+  };
 
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -309,13 +661,13 @@ const switchTab = (tabName) => {
 
     let html = '';
 
-    if (!filtered.length) {
+    if (!filtered.length && !isEditMode) {
       html += `
         <div class="empty-state">
           <div class="empty-state-icon">🔍</div>
           <p>No se encontraron juegos</p>
         </div>`;
-    } else {
+    } else if (filtered.length) {
       html += filtered
         .map(g => {
           const disabledAttr = g.active ? '' : 'disabled';
@@ -416,8 +768,9 @@ const switchTab = (tabName) => {
               <input class="new-game-link-input">
             </div>
           </div>
-          <div class="edit-actions">
+          <div class="edit-actions" style="display:flex;gap:8px;">
             <button class="add-game-btn">Agregar juego</button>
+            <button class="import-games-btn" style="padding:8px 16px;background:transparent;color:var(--accent);border:1px dashed var(--accent);border-radius:var(--radius-sm);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;">📥 Importar juegos</button>
           </div>
         </div>
       `;
@@ -433,9 +786,9 @@ const switchTab = (tabName) => {
   const renderDeposito = (company) => {
     const container = document.getElementById('depositoContent');
     if (!container) return;
-    
+
     const metodos = company.metodosDeposito || [];
-    
+
     if (!isEditMode) {
       if (metodos.length === 0) {
         container.innerHTML = `
@@ -446,9 +799,9 @@ const switchTab = (tabName) => {
         `;
         return;
       }
-      
+
       let html = '<div class="tab-info-card"><h3>Métodos de depósito</h3>';
-      
+
       metodos.forEach((metodo) => {
         html += `
           <div class="metodo-deposito-item">
@@ -470,12 +823,12 @@ const switchTab = (tabName) => {
           </div>
         `;
       });
-      
+
       html += '</div>';
       container.innerHTML = html;
     } else {
       let html = '<div class="edit-section"><h3>Métodos de depósito</h3>';
-      
+
       metodos.forEach((metodo, index) => {
         html += `
           <div class="edit-metodo-card">
@@ -519,13 +872,13 @@ const switchTab = (tabName) => {
           </div>
         `;
       });
-      
+
       html += `
         <button class="add-new-btn" data-type="deposito">
           + Agregar método de depósito
         </button>
       `;
-      
+
       html += '</div>';
       container.innerHTML = html;
     }
@@ -535,9 +888,9 @@ const switchTab = (tabName) => {
   const renderCashout = (company) => {
     const container = document.getElementById('cashoutContent');
     if (!container) return;
-    
+
     const metodos = company.metodosCashout || [];
-    
+
     if (!isEditMode) {
       if (metodos.length === 0) {
         container.innerHTML = `
@@ -548,9 +901,9 @@ const switchTab = (tabName) => {
         `;
         return;
       }
-      
+
       let html = '<div class="tab-info-card"><h3>Métodos de cashout</h3>';
-      
+
       metodos.forEach((metodo) => {
         html += `
           <div class="metodo-deposito-item">
@@ -572,12 +925,12 @@ const switchTab = (tabName) => {
           </div>
         `;
       });
-      
+
       html += '</div>';
       container.innerHTML = html;
     } else {
       let html = '<div class="edit-section"><h3>Métodos de cashout</h3>';
-      
+
       metodos.forEach((metodo, index) => {
         html += `
           <div class="edit-metodo-card">
@@ -621,13 +974,13 @@ const switchTab = (tabName) => {
           </div>
         `;
       });
-      
+
       html += `
         <button class="add-new-btn" data-type="cashout">
           + Agregar método de cashout
         </button>
       `;
-      
+
       html += '</div>';
       container.innerHTML = html;
     }
@@ -637,9 +990,9 @@ const switchTab = (tabName) => {
   const renderConsideraciones = (company) => {
     const container = document.getElementById('consideracionesContent');
     if (!container) return;
-    
+
     const consideraciones = company.consideracionesCashout || '';
-    
+
     if (!isEditMode) {
       if (!consideraciones) {
         container.innerHTML = `
@@ -650,7 +1003,7 @@ const switchTab = (tabName) => {
         `;
         return;
       }
-      
+
       container.innerHTML = `
         <div class="tab-info-card">
           <h3>Consideraciones para cashouts</h3>
@@ -676,9 +1029,9 @@ const switchTab = (tabName) => {
   const renderPromociones = (company) => {
     const container = document.getElementById('promocionesContent');
     if (!container) return;
-    
+
     const promociones = company.promociones || [];
-    
+
     if (!isEditMode) {
       if (promociones.length === 0) {
         container.innerHTML = `
@@ -689,10 +1042,10 @@ const switchTab = (tabName) => {
         `;
         return;
       }
-      
+
       let html = '<div class="tab-info-card"><h3>Promociones activas</h3>';
       html += '<div class="promociones-simple-list">';
-      
+
       promociones.forEach((promo, index) => {
         html += `
           <div class="promocion-simple-item">
@@ -701,12 +1054,12 @@ const switchTab = (tabName) => {
           </div>
         `;
       });
-      
+
       html += '</div></div>';
       container.innerHTML = html;
     } else {
       let html = '<div class="edit-section"><h3>Promociones activas</h3>';
-      
+
       promociones.forEach((promo, index) => {
         html += `
           <div class="edit-metodo-card">
@@ -734,13 +1087,13 @@ const switchTab = (tabName) => {
           </div>
         `;
       });
-      
+
       html += `
         <button class="add-new-btn" data-type="promociones">
           + Agregar promoción
         </button>
       `;
-      
+
       html += '</div>';
       container.innerHTML = html;
     }
@@ -750,9 +1103,9 @@ const switchTab = (tabName) => {
   const renderTerminos = (company) => {
     const container = document.getElementById('terminosContent');
     if (!container) return;
-    
+
     const link = company.terminosLink || company.terminosCondiciones || '';
-    
+
     if (!isEditMode) {
       if (!link) {
         container.innerHTML = `
@@ -763,7 +1116,7 @@ const switchTab = (tabName) => {
         `;
         return;
       }
-      
+
       if (typeof link === 'string' && (link.startsWith('http://') || link.startsWith('https://'))) {
         container.innerHTML = `
           <div class="tab-info-card">
@@ -803,9 +1156,9 @@ const switchTab = (tabName) => {
   const renderCanales = (company) => {
     const container = document.getElementById('canalesContent');
     if (!container) return;
-    
+
     const canales = company.canales || company.canalesAtencion || [];
-    
+
     if (!isEditMode) {
       if (canales.length === 0) {
         container.innerHTML = `
@@ -816,9 +1169,9 @@ const switchTab = (tabName) => {
         `;
         return;
       }
-      
+
       let html = '<div class="tab-info-card"><h3>Canales de atención</h3><div class="canales-list">';
-      
+
       canales.forEach((canal) => {
         if (typeof canal === 'string') {
           html += `
@@ -829,7 +1182,7 @@ const switchTab = (tabName) => {
         } else {
           const nombre = canal.nombre || canal.tipo || 'Canal de atención';
           const contacto = canal.contacto || canal.valor || canal.link || '';
-          
+
           html += `
             <div class="canal-item">
               <div class="canal-nombre">${nombre}</div>
@@ -838,12 +1191,12 @@ const switchTab = (tabName) => {
           `;
         }
       });
-      
+
       html += '</div></div>';
       container.innerHTML = html;
     } else {
       let html = '<div class="edit-section"><h3>Canales de atención</h3>';
-      
+
       canales.forEach((canal, index) => {
         const canalTexto = typeof canal === 'string' ? canal : (canal.nombre || '');
         html += `
@@ -861,53 +1214,53 @@ const switchTab = (tabName) => {
           </div>
         `;
       });
-      
+
       html += `
         <button class="add-new-btn" data-type="canales">
           + Agregar canal de atención
         </button>
       `;
-      
+
       html += '</div>';
       container.innerHTML = html;
     }
   };
 
-// ========= RENDER NOTAS (TIMELINE) =========
-const renderNotas = (company) => {
-  const container = document.getElementById('notasContent');
-  if (!container) return;
-  
-  const notas = Array.isArray(company.notas) ? company.notas : [];
-  
-  if (!isEditMode) {
-    // MODO VISTA
-    if (notas.length === 0) {
-      container.innerHTML = `
+  // ========= RENDER NOTAS (TIMELINE) =========
+  const renderNotas = (company) => {
+    const container = document.getElementById('notasContent');
+    if (!container) return;
+
+    const notas = Array.isArray(company.notas) ? company.notas : [];
+
+    if (!isEditMode) {
+      // MODO VISTA
+      if (notas.length === 0) {
+        container.innerHTML = `
         <div class="tab-info-card">
           <h3>Notas</h3>
           <p>No hay notas registradas para esta compañía.</p>
         </div>
       `;
-      return;
-    }
-    
-    const sortedNotas = [...notas].sort((a, b) => 
-      new Date(b.fecha) - new Date(a.fecha)
-    );
-    
-    let html = '<div class="notas-list">';
-    sortedNotas.forEach((nota) => {
-      const fechaObj = new Date(nota.fecha);
-      const fechaFormateada = fechaObj.toLocaleDateString('es-PE', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-      
-      html += `
+        return;
+      }
+
+      const sortedNotas = [...notas].sort((a, b) =>
+        new Date(b.fecha) - new Date(a.fecha)
+      );
+
+      let html = '<div class="notas-list">';
+      sortedNotas.forEach((nota) => {
+        const fechaObj = new Date(nota.fecha);
+        const fechaFormateada = fechaObj.toLocaleDateString('es-PE', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        html += `
         <div class="nota-item">
           <div class="nota-header">
             <span class="nota-fecha">📌 ${fechaFormateada}</span>
@@ -915,34 +1268,34 @@ const renderNotas = (company) => {
           <div class="nota-texto">${nota.texto}</div>
         </div>
       `;
-    });
-    html += '</div>';
-    
-    container.innerHTML = html;
-    
-  } else {
-    // MODO EDICIÓN - USAR ÍNDICES ORIGINALES
-    let html = '<div class="edit-section"><h3>Notas</h3>';
-    
-    // Crear array con índices originales para mapeo correcto
-    const notasConIndice = notas.map((nota, originalIndex) => ({
-      nota,
-      originalIndex
-    })).sort((a, b) => 
-      new Date(b.nota.fecha) - new Date(a.nota.fecha)
-    );
-    
-    notasConIndice.forEach(({ nota, originalIndex }) => {
-      const fechaObj = new Date(nota.fecha);
-      const fechaFormateada = fechaObj.toLocaleDateString('es-PE', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
       });
-      
-      html += `
+      html += '</div>';
+
+      container.innerHTML = html;
+
+    } else {
+      // MODO EDICIÓN - USAR ÍNDICES ORIGINALES
+      let html = '<div class="edit-section"><h3>Notas</h3>';
+
+      // Crear array con índices originales para mapeo correcto
+      const notasConIndice = notas.map((nota, originalIndex) => ({
+        nota,
+        originalIndex
+      })).sort((a, b) =>
+        new Date(b.nota.fecha) - new Date(a.nota.fecha)
+      );
+
+      notasConIndice.forEach(({ nota, originalIndex }) => {
+        const fechaObj = new Date(nota.fecha);
+        const fechaFormateada = fechaObj.toLocaleDateString('es-PE', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        html += `
         <div class="edit-nota-card">
           <div class="edit-card-header">
             <span class="nota-fecha-edit">📌 ${fechaFormateada}</span>
@@ -955,9 +1308,9 @@ const renderNotas = (company) => {
           >${nota.texto}</textarea>
         </div>
       `;
-    });
-    
-    html += `
+      });
+
+      html += `
       <div class="new-nota-card">
         <h4>➕ Nueva nota</h4>
         <textarea 
@@ -969,11 +1322,11 @@ const renderNotas = (company) => {
         <button class="add-new-btn" data-type="nota">Agregar nota</button>
       </div>
     `;
-    
-    html += '</div>';
-    container.innerHTML = html;
-  }
-};
+
+      html += '</div>';
+      container.innerHTML = html;
+    }
+  };
 
   // ========= GUARDAR CAMBIOS POR TAB =========
   const saveCurrentTab = async () => {
@@ -983,10 +1336,10 @@ const renderNotas = (company) => {
     if (companyIndex === -1) return;
 
     try {
-      switch(currentTab) {
+      switch (currentTab) {
         case 'credenciales':
           break;
-          
+
         case 'deposito':
           const depositoContainer = document.getElementById('depositoContent');
           const metodosDeposito = [];
@@ -1003,7 +1356,7 @@ const renderNotas = (company) => {
             metodosDeposito
           );
           break;
-          
+
         case 'cashout':
           const cashoutContainer = document.getElementById('cashoutContent');
           const metodosCashout = [];
@@ -1020,7 +1373,7 @@ const renderNotas = (company) => {
             metodosCashout
           );
           break;
-          
+
         case 'consideraciones':
           const consideracionesValue = document.getElementById('consideracionesTextarea').value;
           currentCompany.consideracionesCashout = consideracionesValue;
@@ -1029,7 +1382,7 @@ const renderNotas = (company) => {
             consideracionesValue
           );
           break;
-          
+
         case 'promociones':
           const promocionesContainer = document.getElementById('promocionesContent');
           const promociones = [];
@@ -1044,7 +1397,7 @@ const renderNotas = (company) => {
             promociones
           );
           break;
-          
+
         case 'terminos':
           const terminosValue = document.getElementById('terminosInput').value;
           currentCompany.terminosLink = terminosValue;
@@ -1053,7 +1406,7 @@ const renderNotas = (company) => {
             terminosValue
           );
           break;
-          
+
         case 'canales':
           const canalesContainer = document.getElementById('canalesContent');
           const canales = [];
@@ -1066,7 +1419,7 @@ const renderNotas = (company) => {
             canales
           );
           break;
-          
+
         case 'notas':
           const notaTextareas = document.querySelectorAll('.edit-nota-textarea');
           notaTextareas.forEach(textarea => {
@@ -1075,7 +1428,7 @@ const renderNotas = (company) => {
               currentCompany.notas[index].texto = textarea.value.trim();
             }
           });
-          
+
           await window.firebaseSet(
             window.firebaseRef(window.db, `companies/${currentCompany.id}/notas`),
             currentCompany.notas || []
@@ -1086,7 +1439,7 @@ const renderNotas = (company) => {
       toast.textContent = '✅ Cambios guardados correctamente';
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 2000);
-      
+
     } catch (error) {
       console.error('Error al guardar:', error);
       toast.textContent = '❌ Error al guardar cambios';
@@ -1101,8 +1454,8 @@ const renderNotas = (company) => {
     const addBtn = e.target.closest('.add-new-btn');
     if (addBtn && isEditMode) {
       const type = addBtn.dataset.type;
-      
-      switch(type) {
+
+      switch (type) {
         case 'deposito':
           if (!currentCompany.metodosDeposito) currentCompany.metodosDeposito = [];
           currentCompany.metodosDeposito.push({ metodo: '', proveedor: '', montoMinimo: '', montoMaximo: '' });
@@ -1126,7 +1479,7 @@ const renderNotas = (company) => {
         case 'nota':
           const textarea = document.getElementById('newNotaTextarea');
           if (!textarea) return;
-          
+
           const textoNota = textarea.value.trim();
           if (!textoNota) {
             toast.textContent = 'Escribe algo en la nota';
@@ -1134,35 +1487,35 @@ const renderNotas = (company) => {
             setTimeout(() => toast.classList.remove('show'), 1500);
             return;
           }
-          
+
           const nuevaNota = {
             texto: textoNota,
             fecha: new Date().toISOString()
           };
-          
+
           if (!Array.isArray(currentCompany.notas)) {
             currentCompany.notas = [];
           }
-          
+
           currentCompany.notas.push(nuevaNota);
           renderNotas(currentCompany);
-          
+
           toast.textContent = '✅ Nota agregada (recuerda guardar)';
           toast.classList.add('show');
           setTimeout(() => toast.classList.remove('show'), 1500);
           break;
       }
     }
-    
+
     // Eliminar elemento
     const deleteBtn = e.target.closest('.delete-btn');
     if (deleteBtn && isEditMode) {
       const type = deleteBtn.dataset.type;
       const index = parseInt(deleteBtn.dataset.index);
-      
+
       if (!confirm('¿Eliminar este elemento?')) return;
-      
-      switch(type) {
+
+      switch (type) {
         case 'deposito':
           currentCompany.metodosDeposito.splice(index, 1);
           renderDeposito(currentCompany);
@@ -1183,7 +1536,7 @@ const renderNotas = (company) => {
           if (Array.isArray(currentCompany.notas)) {
             currentCompany.notas.splice(index, 1);
             renderNotas(currentCompany);
-            
+
             toast.textContent = '🗑️ Nota eliminada (recuerda guardar)';
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 1500);
@@ -1245,133 +1598,148 @@ const renderNotas = (company) => {
     renderGames(currentCompany.games, e.target.value);
   });
 
-const renderGlobalResults = term => {
-  const t = term.toLowerCase();
-  if (!t) {
-    gamesGrid.innerHTML = `
+  const renderGlobalResults = term => {
+    const t = term.toLowerCase();
+    if (!t) {
+      gamesGrid.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">📁</div>
         <p>Selecciona una compañía</p>
       </div>`;
-    return;
-  }
+      return;
+    }
 
-  const results = [];
-  
-  companies.forEach(company => {
-    const isVisibleByFilter =
-      localCompanyFilter.companyIds.length === 0 ||
-      localCompanyFilter.companyIds.includes(company.id);
-    if (!isVisibleByFilter) return;
+    const results = [];
 
-    const matches = {
-      credenciales: [],
-      deposito: [],
-      cashout: [],
-      consideraciones: null,
-      promociones: [],
-      terminos: null,
-      canales: [],
-      notas: []
-    };
+    companies.forEach(company => {
+      // Company filter: check omnibar company pills + local filter + partner filter
+      const isVisibleByLocalFilter =
+        localCompanyFilter.companyIds.length === 0 ||
+        localCompanyFilter.companyIds.includes(company.id);
+      const isVisibleBySearchFilter =
+        activeSearchCompanyIds.length === 0 ||
+        activeSearchCompanyIds.includes(company.id);
+      const isVisibleByPartner =
+        activePartnerFilters.length === 0 ||
+        activePartnerFilters.includes(company.partner || '');
+      if (!isVisibleByLocalFilter || !isVisibleBySearchFilter || !isVisibleByPartner) return;
 
-    let hasMatches = false;
+      const matches = {
+        credenciales: [],
+        deposito: [],
+        cashout: [],
+        consideraciones: null,
+        promociones: [],
+        terminos: null,
+        canales: [],
+        notas: []
+      };
 
-    // 1. BUSCAR EN CREDENCIALES (juegos)
-    company.games.forEach(g => {
-      if (
-        g.name.toLowerCase().includes(t) ||
-        g.username.toLowerCase().includes(t) ||
-        g.link.toLowerCase().includes(t)
-      ) {
-        matches.credenciales.push(g);
-        hasMatches = true;
+      let hasMatches = false;
+
+      // 1. BUSCAR EN CREDENCIALES (juegos) — only if category active
+      if (activeCategoryFilters.includes('credenciales')) {
+        company.games.forEach(g => {
+          if (
+            g.name.toLowerCase().includes(t) ||
+            g.username.toLowerCase().includes(t) ||
+            g.link.toLowerCase().includes(t)
+          ) {
+            matches.credenciales.push(g);
+            hasMatches = true;
+          }
+        });
+      }
+
+      // 2. BUSCAR EN MÉTODOS DE DEPÓSITO
+      if (activeCategoryFilters.includes('deposito') && Array.isArray(company.metodosDeposito)) {
+        company.metodosDeposito.forEach(m => {
+          const searchText = `${m.metodo || ''} ${m.proveedor || ''} ${m.montoMinimo || ''} ${m.montoMaximo || ''}`.toLowerCase();
+          if (searchText.includes(t)) {
+            matches.deposito.push(m);
+            hasMatches = true;
+          }
+        });
+      }
+
+      // 3. BUSCAR EN MÉTODOS DE CASHOUT
+      if (activeCategoryFilters.includes('cashout') && Array.isArray(company.metodosCashout)) {
+        company.metodosCashout.forEach(m => {
+          const searchText = `${m.metodo || ''} ${m.proveedor || ''} ${m.montoMinimo || ''} ${m.montoMaximo || ''}`.toLowerCase();
+          if (searchText.includes(t)) {
+            matches.cashout.push(m);
+            hasMatches = true;
+          }
+        });
+      }
+
+      // 4. BUSCAR EN CONSIDERACIONES
+      if (activeCategoryFilters.includes('consideraciones')) {
+        const consideraciones = company.consideracionesCashout || '';
+        if (consideraciones.toLowerCase().includes(t)) {
+          matches.consideraciones = consideraciones;
+          hasMatches = true;
+        }
+      }
+
+      // 5. BUSCAR EN PROMOCIONES
+      if (activeCategoryFilters.includes('promociones') && Array.isArray(company.promociones)) {
+        company.promociones.forEach(p => {
+          const searchText = `${p.titulo || ''} ${p.descripcion || ''}`.toLowerCase();
+          if (searchText.includes(t)) {
+            matches.promociones.push(p);
+            hasMatches = true;
+          }
+        });
+      }
+
+      // 6. BUSCAR EN TÉRMINOS
+      if (activeCategoryFilters.includes('terminos')) {
+        const terminos = company.terminosLink || company.terminosCondiciones || '';
+        if (terminos.toLowerCase().includes(t)) {
+          matches.terminos = terminos;
+          hasMatches = true;
+        }
+      }
+
+      // 7. BUSCAR EN CANALES
+      if (activeCategoryFilters.includes('canales')) {
+        const canales = company.canales || company.canalesAtencion || [];
+        canales.forEach(c => {
+          const searchText = typeof c === 'string' ? c : `${c.nombre || ''} ${c.contacto || ''}`;
+          if (searchText.toLowerCase().includes(t)) {
+            matches.canales.push(c);
+            hasMatches = true;
+          }
+        });
+      }
+
+      // 8. BUSCAR EN NOTAS
+      if (activeCategoryFilters.includes('notas') && Array.isArray(company.notas)) {
+        company.notas.forEach(n => {
+          if (n.texto.toLowerCase().includes(t)) {
+            matches.notas.push(n);
+            hasMatches = true;
+          }
+        });
+      }
+
+      if (hasMatches) {
+        results.push({ company, matches });
       }
     });
 
-    // 2. BUSCAR EN MÉTODOS DE DEPÓSITO
-    if (Array.isArray(company.metodosDeposito)) {
-      company.metodosDeposito.forEach(m => {
-        const searchText = `${m.metodo || ''} ${m.proveedor || ''} ${m.montoMinimo || ''} ${m.montoMaximo || ''}`.toLowerCase();
-        if (searchText.includes(t)) {
-          matches.deposito.push(m);
-          hasMatches = true;
-        }
-      });
-    }
-
-    // 3. BUSCAR EN MÉTODOS DE CASHOUT
-    if (Array.isArray(company.metodosCashout)) {
-      company.metodosCashout.forEach(m => {
-        const searchText = `${m.metodo || ''} ${m.proveedor || ''} ${m.montoMinimo || ''} ${m.montoMaximo || ''}`.toLowerCase();
-        if (searchText.includes(t)) {
-          matches.cashout.push(m);
-          hasMatches = true;
-        }
-      });
-    }
-
-    // 4. BUSCAR EN CONSIDERACIONES
-    const consideraciones = company.consideracionesCashout || '';
-    if (consideraciones.toLowerCase().includes(t)) {
-      matches.consideraciones = consideraciones;
-      hasMatches = true;
-    }
-
-    // 5. BUSCAR EN PROMOCIONES
-    if (Array.isArray(company.promociones)) {
-      company.promociones.forEach(p => {
-        const searchText = `${p.titulo || ''} ${p.descripcion || ''}`.toLowerCase();
-        if (searchText.includes(t)) {
-          matches.promociones.push(p);
-          hasMatches = true;
-        }
-      });
-    }
-
-    // 6. BUSCAR EN TÉRMINOS
-    const terminos = company.terminosLink || company.terminosCondiciones || '';
-    if (terminos.toLowerCase().includes(t)) {
-      matches.terminos = terminos;
-      hasMatches = true;
-    }
-
-    // 7. BUSCAR EN CANALES
-    const canales = company.canales || company.canalesAtencion || [];
-    canales.forEach(c => {
-      const searchText = typeof c === 'string' ? c : `${c.nombre || ''} ${c.contacto || ''}`;
-      if (searchText.toLowerCase().includes(t)) {
-        matches.canales.push(c);
-        hasMatches = true;
-      }
-    });
-
-    // 8. BUSCAR EN NOTAS
-    if (Array.isArray(company.notas)) {
-      company.notas.forEach(n => {
-        if (n.texto.toLowerCase().includes(t)) {
-          matches.notas.push(n);
-          hasMatches = true;
-        }
-      });
-    }
-
-    if (hasMatches) {
-      results.push({ company, matches });
-    }
-  });
-
-  if (!results.length) {
-    gamesGrid.innerHTML = `
+    if (!results.length) {
+      gamesGrid.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">🔍</div>
         <p>No se encontraron resultados para "${term}"</p>
       </div>`;
-    return;
-  }
+      return;
+    }
 
-  gamesGrid.innerHTML = results.map(({ company, matches }) => {
-    let html = `
+    gamesGrid.innerHTML = results.map(({ company, matches }) => {
+      let html = `
       <div class="global-results">
         <h3>
           <div style="background:${company.color};width:4px;height:20px;display:inline-block;margin-right:8px;"></div>
@@ -1379,13 +1747,13 @@ const renderGlobalResults = term => {
         </h3>
     `;
 
-    // CREDENCIALES
-    if (matches.credenciales.length > 0) {
-      html += `<div class="result-section"><h4>🎮 Credenciales (${matches.credenciales.length})</h4>`;
-      matches.credenciales.forEach(g => {
-        const disabledAttr = g.active ? '' : 'disabled';
-        const disabledClass = g.active ? '' : 'disabled';
-        html += `
+      // CREDENCIALES
+      if (matches.credenciales.length > 0) {
+        html += `<div class="result-section"><h4>🎮 Credenciales (${matches.credenciales.length})</h4>`;
+        matches.credenciales.forEach(g => {
+          const disabledAttr = g.active ? '' : 'disabled';
+          const disabledClass = g.active ? '' : 'disabled';
+          html += `
           <div class="game-card ${g.active ? '' : 'inactive'}">
             <div class="game-header">
               <div class="game-name">${g.name}</div>
@@ -1411,105 +1779,105 @@ const renderGlobalResults = term => {
             <div class="last-modified">Última mod: ${g.lastModified}</div>
           </div>
         `;
-      });
-      html += '</div>';
-    }
+        });
+        html += '</div>';
+      }
 
-    // DEPÓSITO
-    if (matches.deposito.length > 0) {
-      html += `<div class="result-section"><h4>💰 Métodos de depósito (${matches.deposito.length})</h4>`;
-      matches.deposito.forEach(m => {
-        html += `
+      // DEPÓSITO
+      if (matches.deposito.length > 0) {
+        html += `<div class="result-section"><h4>💰 Métodos de depósito (${matches.deposito.length})</h4>`;
+        matches.deposito.forEach(m => {
+          html += `
           <div class="search-result-card">
             <div class="search-result-title">${m.metodo || m.metodoPago || 'Método de depósito'}</div>
             <div class="search-result-text">Proveedor: ${m.proveedor || 'N/A'}</div>
             <div class="search-result-text">Monto: ${m.montoMinimo || 'N/A'} - ${m.montoMaximo || 'N/A'}</div>
           </div>
         `;
-      });
-      html += '</div>';
-    }
+        });
+        html += '</div>';
+      }
 
-    // CASHOUT
-    if (matches.cashout.length > 0) {
-      html += `<div class="result-section"><h4>💸 Métodos de cashout (${matches.cashout.length})</h4>`;
-      matches.cashout.forEach(m => {
-        html += `
+      // CASHOUT
+      if (matches.cashout.length > 0) {
+        html += `<div class="result-section"><h4>💸 Métodos de cashout (${matches.cashout.length})</h4>`;
+        matches.cashout.forEach(m => {
+          html += `
           <div class="search-result-card">
             <div class="search-result-title">${m.metodo || m.metodoPago || 'Método de cashout'}</div>
             <div class="search-result-text">Proveedor: ${m.proveedor || 'N/A'}</div>
             <div class="search-result-text">Monto: ${m.montoMinimo || 'N/A'} - ${m.montoMaximo || 'N/A'}</div>
           </div>
         `;
-      });
-      html += '</div>';
-    }
+        });
+        html += '</div>';
+      }
 
-    // CONSIDERACIONES
-    if (matches.consideraciones) {
-      html += `<div class="result-section"><h4>📋 Consideraciones para cashouts</h4>`;
-      const preview = matches.consideraciones.substring(0, 200) + (matches.consideraciones.length > 200 ? '...' : '');
-      html += `<div class="search-result-card"><div class="search-result-text">${preview}</div></div>`;
-      html += '</div>';
-    }
+      // CONSIDERACIONES
+      if (matches.consideraciones) {
+        html += `<div class="result-section"><h4>📋 Consideraciones para cashouts</h4>`;
+        const preview = matches.consideraciones.substring(0, 200) + (matches.consideraciones.length > 200 ? '...' : '');
+        html += `<div class="search-result-card"><div class="search-result-text">${preview}</div></div>`;
+        html += '</div>';
+      }
 
-    // PROMOCIONES
-    if (matches.promociones.length > 0) {
-      html += `<div class="result-section"><h4>🎁 Promociones (${matches.promociones.length})</h4>`;
-      matches.promociones.forEach(p => {
-        html += `
+      // PROMOCIONES
+      if (matches.promociones.length > 0) {
+        html += `<div class="result-section"><h4>🎁 Promociones (${matches.promociones.length})</h4>`;
+        matches.promociones.forEach(p => {
+          html += `
           <div class="search-result-card">
             <div class="search-result-title">${p.titulo || 'Promoción'}</div>
             <div class="search-result-text">${p.descripcion || 'Sin descripción'}</div>
           </div>
         `;
-      });
-      html += '</div>';
-    }
-
-    // TÉRMINOS
-    if (matches.terminos) {
-      html += `<div class="result-section"><h4>📜 Términos y condiciones</h4>`;
-      const preview = matches.terminos.substring(0, 150) + (matches.terminos.length > 150 ? '...' : '');
-      html += `<div class="search-result-card"><div class="search-result-text">${preview}</div></div>`;
-      html += '</div>';
-    }
-
-    // CANALES
-    if (matches.canales.length > 0) {
-      html += `<div class="result-section"><h4>📞 Canales de atención (${matches.canales.length})</h4>`;
-      matches.canales.forEach(c => {
-        const texto = typeof c === 'string' ? c : `${c.nombre || 'Canal'}: ${c.contacto || ''}`;
-        html += `<div class="search-result-card"><div class="search-result-text">${texto}</div></div>`;
-      });
-      html += '</div>';
-    }
-
-    // NOTAS
-    if (matches.notas.length > 0) {
-      html += `<div class="result-section"><h4>📝 Notas (${matches.notas.length})</h4>`;
-      matches.notas.forEach(n => {
-        const fechaObj = new Date(n.fecha);
-        const fechaFormateada = fechaObj.toLocaleDateString('es-PE', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric'
         });
-        const preview = n.texto.substring(0, 120) + (n.texto.length > 120 ? '...' : '');
-        html += `
+        html += '</div>';
+      }
+
+      // TÉRMINOS
+      if (matches.terminos) {
+        html += `<div class="result-section"><h4>📜 Términos y condiciones</h4>`;
+        const preview = matches.terminos.substring(0, 150) + (matches.terminos.length > 150 ? '...' : '');
+        html += `<div class="search-result-card"><div class="search-result-text">${preview}</div></div>`;
+        html += '</div>';
+      }
+
+      // CANALES
+      if (matches.canales.length > 0) {
+        html += `<div class="result-section"><h4>📞 Canales de atención (${matches.canales.length})</h4>`;
+        matches.canales.forEach(c => {
+          const texto = typeof c === 'string' ? c : `${c.nombre || 'Canal'}: ${c.contacto || ''}`;
+          html += `<div class="search-result-card"><div class="search-result-text">${texto}</div></div>`;
+        });
+        html += '</div>';
+      }
+
+      // NOTAS
+      if (matches.notas.length > 0) {
+        html += `<div class="result-section"><h4>📝 Notas (${matches.notas.length})</h4>`;
+        matches.notas.forEach(n => {
+          const fechaObj = new Date(n.fecha);
+          const fechaFormateada = fechaObj.toLocaleDateString('es-PE', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+          });
+          const preview = n.texto.substring(0, 120) + (n.texto.length > 120 ? '...' : '');
+          html += `
           <div class="search-result-card">
             <div class="search-result-date">📌 ${fechaFormateada}</div>
             <div class="search-result-text">${preview}</div>
           </div>
         `;
-      });
-      html += '</div>';
-    }
+        });
+        html += '</div>';
+      }
 
-    html += '</div>';
-    return html;
-  }).join('');
-};
+      html += '</div>';
+      return html;
+    }).join('');
+  };
 
   globalSearch.addEventListener('input', e => {
     renderGlobalResults(e.target.value);
@@ -1548,7 +1916,7 @@ const renderGlobalResults = term => {
     }
   };
 
-  const addGameToCurrentCompany = () => {
+  const addGameToCurrentCompany = async () => {
     if (!currentCompany) return;
 
     const nameInput = gamesGrid.querySelector('.new-game-name-input');
@@ -1580,8 +1948,11 @@ const renderGlobalResults = term => {
       lastModified: today
     };
 
-    const ok = confirm(
-      `Estás a punto de crear el juego "${name}" en ${currentCompany.name}. ¿Quieres proceder?`
+    const ok = await showConfirmModal(
+      '¿Crear juego?',
+      `Estás a punto de crear el juego "${name}" en ${currentCompany.name}. ¿Quieres proceder?`,
+      'Crear',
+      'Cancelar'
     );
     if (!ok) return;
 
@@ -1731,6 +2102,109 @@ const renderGlobalResults = term => {
       return;
     }
 
+    const importBtn = e.target.closest('.import-games-btn');
+    if (importBtn && isEditMode && currentCompany) {
+      // Build source company options (same partner, with games)
+      const partner = currentCompany.partner;
+      const sources = companies.filter(c =>
+        String(c.id) !== String(currentCompany.id) &&
+        c.partner === partner &&
+        c.games && c.games.length > 0
+      );
+
+      if (!sources.length) {
+        toast.textContent = '⚠️ No hay otras compañías del mismo partner con juegos';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2500);
+        return;
+      }
+
+      // Show import modal
+      const existing = document.getElementById('customConfirmModal');
+      if (existing) existing.remove();
+
+      const overlay = document.createElement('div');
+      overlay.id = 'customConfirmModal';
+      overlay.className = 'confirm-overlay';
+      overlay.innerHTML = `
+        <div class="confirm-box" style="max-width:400px;">
+          <div class="confirm-icon">📥</div>
+          <h3 class="confirm-title">Importar juegos</h3>
+          <p class="confirm-message">Selecciona una compañía de ${partner} para copiar sus juegos (nombre, username y link).</p>
+          <select id="importSourceSelect" style="width:100%;padding:9px 12px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:13px;font-family:inherit;outline:none;margin-bottom:16px;">
+            <option value="">Selecciona una compañía...</option>
+            ${sources.map(c => `<option value="${c.id}">${c.name} (${c.games.length} juegos)</option>`).join('')}
+          </select>
+          <div class="confirm-actions">
+            <button class="confirm-btn confirm-btn-cancel">Cancelar</button>
+            <button class="confirm-btn confirm-btn-accept">Importar</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      requestAnimationFrame(() => overlay.classList.add('show'));
+
+      const closeOverlay = () => {
+        overlay.classList.remove('show');
+        setTimeout(() => overlay.remove(), 200);
+      };
+
+      overlay.querySelector('.confirm-btn-cancel').addEventListener('click', closeOverlay);
+      overlay.addEventListener('click', ev => { if (ev.target === overlay) closeOverlay(); });
+
+      overlay.querySelector('.confirm-btn-accept').addEventListener('click', async () => {
+        const sourceId = overlay.querySelector('#importSourceSelect').value;
+        if (!sourceId) {
+          toast.textContent = '⚠️ Selecciona una compañía de origen';
+          toast.classList.add('show');
+          setTimeout(() => toast.classList.remove('show'), 2000);
+          return;
+        }
+        const source = companies.find(c => String(c.id) === String(sourceId));
+        if (!source) return;
+
+        // Get current max game id
+        const maxGameId = currentCompany.games.length > 0
+          ? Math.max(...currentCompany.games.map(g => Number(g.id) || 0))
+          : -1;
+
+        const newGames = source.games.map((g, i) => ({
+          id: maxGameId + 1 + i,
+          name: g.name,
+          username: g.username || '',
+          link: g.link || '',
+          active: true,
+          lastModified: new Date().toISOString().split('T')[0]
+        }));
+
+        // Add to local array
+        currentCompany.games.push(...newGames);
+
+        // Save all to Firebase
+        try {
+          const gamesObj = {};
+          currentCompany.games.forEach(g => { gamesObj[g.id] = g; });
+          await window.firebaseSet(
+            window.firebaseRef(window.db, `companies/${currentCompany.id}/games`),
+            gamesObj
+          );
+          toast.textContent = `✅ ${newGames.length} juegos importados de ${source.name}`;
+          toast.classList.add('show');
+          setTimeout(() => toast.classList.remove('show'), 2500);
+          renderCompanies();
+          switchTab('credenciales');
+        } catch (err) {
+          console.error('Error importing games:', err);
+          toast.textContent = '❌ Error al importar juegos';
+          toast.classList.add('show');
+          setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+        closeOverlay();
+      });
+
+      return;
+    }
+
     const toggle = e.target.closest('.status-toggle');
     if (toggle) {
       const companyIdAttr = toggle.getAttribute('data-company-id');
@@ -1794,20 +2268,27 @@ const renderGlobalResults = term => {
         isEditMode = true;
         editModeBtn.textContent = 'Guardar';
         updateAddCompanyBtnVisibility();
-        
+        updatePartnerBadge();
+        updateDeleteBtn();
         switchTab(currentTab);
-        
+
       } else {
         // GUARDAR Y SALIR DE MODO EDICIÓN
-        const confirmSave = confirm('¿Guardar los cambios?');
+        const confirmSave = await showConfirmModal(
+          '¿Guardar cambios?',
+          'Se guardarán los cambios realizados en esta sección.',
+          'Guardar',
+          'Cancelar'
+        );
         if (!confirmSave) return;
-        
+
         await saveCurrentTab();
-        
+
         isEditMode = false;
         editModeBtn.textContent = 'Editar';
         updateAddCompanyBtnVisibility();
-        
+        updatePartnerBadge();
+        updateDeleteBtn();
         switchTab(currentTab);
       }
     });
@@ -1817,7 +2298,7 @@ const renderGlobalResults = term => {
   const initApp = () => {
     const storedAdmin = localStorage.getItem('credentialsAdminLoggedIn');
     adminLoggedIn = storedAdmin === 'true';
-    
+
     updateAddCompanyBtnVisibility();
 
     loadLocalFilter();
@@ -1835,7 +2316,7 @@ const renderGlobalResults = term => {
         c =>
           String(c.id) === String(selectedCompanyId) &&
           (localCompanyFilter.companyIds.length === 0 ||
-           localCompanyFilter.companyIds.includes(c.id))
+            localCompanyFilter.companyIds.includes(c.id))
       );
     }
 
@@ -1867,223 +2348,365 @@ const renderGlobalResults = term => {
   };
 
   // ==================== AGREGAR COMPAÑÍA ==================== 
-const addCompanyBtn = document.getElementById('addCompanyBtn');
+  const addCompanyBtn = document.getElementById('addCompanyBtn');
 
-// Crear modal HTML
-const createCompanyModal = () => {
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
-  modal.id = 'addCompanyModal';
-  modal.innerHTML = `
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title">➕ Nueva compañía</h2>
-        <button class="modal-close" id="closeModalBtn">✕</button>
+  // Crear modal HTML
+  const createCompanyModal = () => {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'addCompanyModal';
+    modal.innerHTML = `
+  <div class="modal-content" style="max-width:520px;">
+    <div class="modal-header">
+      <h2 class="modal-title">➕ Nueva compañía</h2>
+      <button class="modal-close" id="closeModalBtn">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <label for="companyName">Nombre de la compañía *</label>
+        <input type="text" id="companyName" placeholder="Ej: Betsson, Inkabet, etc." />
       </div>
-      <div class="modal-body">
-        <div class="modal-field">
-          <label for="companyName">Nombre de la compañía *</label>
-          <input type="text" id="companyName" placeholder="Ej: Betsson, Inkabet, etc." />
+      
+      <div class="modal-field">
+        <label for="companyColor">Color identificador *</label>
+        <div class="color-picker-container">
+          <div class="color-preview" id="colorPreview" style="background: #3b82f6;"></div>
+          <input type="text" id="companyColor" value="#3b82f6" placeholder="#3b82f6" />
         </div>
-        
-        <div class="modal-field">
-          <label for="companyColor">Color identificador *</label>
-          <div class="color-picker-container">
-            <div class="color-preview" id="colorPreview" style="background: #3b82f6;"></div>
-            <input type="text" id="companyColor" value="#3b82f6" placeholder="#3b82f6" />
-          </div>
-          <div class="color-suggestions" id="colorSuggestions"></div>
-        </div>
+        <div class="color-suggestions" id="colorSuggestions"></div>
       </div>
-      <div class="modal-footer">
-        <button class="modal-btn modal-btn-secondary" id="cancelModalBtn">Cancelar</button>
-        <button class="modal-btn modal-btn-primary" id="createCompanyBtn">Crear compañía</button>
+      
+      <div class="modal-field">
+        <label for="companyPartner">Partner / Licencia *</label>
+        <select id="companyPartner" style="width:100%;padding:9px 12px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:13px;font-family:inherit;outline:none;">
+          <option value="" disabled selected>Selecciona un partner</option>
+          <option value="Dragon">🐲 Dragon</option>
+          <option value="Tierlock">🔒 Tierlock</option>
+          <option value="Taparcadia">🎮 Taparcadia</option>
+          <option value="Wysaro">⭐ Wysaro</option>
+        </select>
+      </div>
+
+      <!-- Games clone section (hidden until partner selected) -->
+      <div class="modal-field" id="gamesCloneSection" style="display:none;">
+        <label>Juegos iniciales</label>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <select id="cloneSourceCompany" style="flex:1;padding:8px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:12px;font-family:inherit;outline:none;">
+            <option value="">Copiar juegos de...</option>
+          </select>
+          <button type="button" id="cloneGamesBtn" style="padding:8px 14px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;">Copiar</button>
+        </div>
+        <div id="gamesListContainer" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
+        <button type="button" id="addGameRow" style="margin-top:8px;padding:7px 14px;background:transparent;color:var(--accent);border:1px dashed var(--accent);border-radius:var(--radius-sm);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;width:100%;transition:all 0.15s;">+ Agregar juego</button>
       </div>
     </div>
-  `;
-  document.body.appendChild(modal);
-  return modal;
-};
+    <div class="modal-footer">
+      <button class="modal-btn modal-btn-secondary" id="cancelModalBtn">Cancelar</button>
+      <button class="modal-btn modal-btn-primary" id="createCompanyBtn">Crear compañía</button>
+    </div>
+  </div>
+`;
+    document.body.appendChild(modal);
+    return modal;
+  };
 
-// Paleta de colores sugeridos
-const coloresSugeridos = [
-  '#3b82f6', // Azul
-  '#ef4444', // Rojo
-  '#10b981', // Verde
-  '#f59e0b', // Naranja
-  '#8b5cf6', // Morado
-  '#ec4899', // Rosa
-  '#06b6d4', // Cyan
-  '#84cc16', // Lima
-  '#f97316', // Naranja oscuro
-  '#6366f1', // Índigo
-  '#14b8a6', // Teal
-  '#f43f5e', // Rosa rojo
-];
+  // Paleta de colores sugeridos
+  const coloresSugeridos = [
+    '#3b82f6', // Azul
+    '#ef4444', // Rojo
+    '#10b981', // Verde
+    '#f59e0b', // Naranja
+    '#8b5cf6', // Morado
+    '#ec4899', // Rosa
+    '#06b6d4', // Cyan
+    '#84cc16', // Lima
+    '#f97316', // Naranja oscuro
+    '#6366f1', // Índigo
+    '#14b8a6', // Teal
+    '#f43f5e', // Rosa rojo
+  ];
 
-// Renderizar sugerencias de color
-const renderColorSuggestions = (container, inputElement, previewElement) => {
-  container.innerHTML = '';
-  coloresSugeridos.forEach(color => {
-    const suggestion = document.createElement('div');
-    suggestion.className = 'color-suggestion';
-    suggestion.style.background = color;
-    suggestion.title = color;
-    suggestion.addEventListener('click', () => {
-      inputElement.value = color;
-      previewElement.style.background = color;
+  // Renderizar sugerencias de color
+  const renderColorSuggestions = (container, inputElement, previewElement) => {
+    container.innerHTML = '';
+    coloresSugeridos.forEach(color => {
+      const suggestion = document.createElement('div');
+      suggestion.className = 'color-suggestion';
+      suggestion.style.background = color;
+      suggestion.title = color;
+      suggestion.addEventListener('click', () => {
+        inputElement.value = color;
+        previewElement.style.background = color;
+      });
+      container.appendChild(suggestion);
     });
-    container.appendChild(suggestion);
-  });
-};
+  };
 
-// Abrir modal
-const openAddCompanyModal = () => {
-  let modal = document.getElementById('addCompanyModal');
-  if (!modal) {
-    modal = createCompanyModal();
-  }
-  
-  const nameInput = document.getElementById('companyName');
-  const colorInput = document.getElementById('companyColor');
-  const colorPreview = document.getElementById('colorPreview');
-  const colorSuggestions = document.getElementById('colorSuggestions');
-  const closeBtn = document.getElementById('closeModalBtn');
-  const cancelBtn = document.getElementById('cancelModalBtn');
-  const createBtn = document.getElementById('createCompanyBtn');
-  
-  // Reset inputs
-  nameInput.value = '';
-  colorInput.value = '#3b82f6';
-  colorPreview.style.background = '#3b82f6';
-  
-  // Renderizar sugerencias
-  renderColorSuggestions(colorSuggestions, colorInput, colorPreview);
-  
-  // Actualizar preview en tiempo real
-  colorInput.addEventListener('input', () => {
-    const color = colorInput.value.trim();
-    if (/^#[0-9A-Fa-f]{6}$/.test(color)) {
-      colorPreview.style.background = color;
+  // Abrir modal
+  const openAddCompanyModal = () => {
+    let modal = document.getElementById('addCompanyModal');
+    if (!modal) {
+      modal = createCompanyModal();
     }
-  });
-  
-  // Cerrar modal
-  const closeModal = () => {
-    modal.classList.remove('show');
-  };
-  
-  closeBtn.onclick = closeModal;
-  cancelBtn.onclick = closeModal;
-  
-  // Click fuera del modal
-  modal.onclick = (e) => {
-    if (e.target === modal) closeModal();
-  };
-  
-  // Crear compañía
-  createBtn.onclick = async () => {
-    const name = nameInput.value.trim();
-    const color = colorInput.value.trim();
-    
-    // Validaciones
-    if (!name) {
-      toast.textContent = '⚠️ El nombre es obligatorio';
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2000);
-      return;
-    }
-    
-    if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
-      toast.textContent = '⚠️ Color inválido. Usa formato #RRGGBB';
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2000);
-      return;
-    }
-    
-    // Verificar nombre duplicado
-    if (companies.some(c => c.name.toLowerCase() === name.toLowerCase())) {
-      toast.textContent = '⚠️ Ya existe una compañía con ese nombre';
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2000);
-      return;
-    }
-    
-    // Obtener el próximo ID disponible
-    const maxId = companies.length > 0 
-      ? Math.max(...companies.map(c => Number(c.id) || 0)) 
-      : 0;
-    const newId = maxId + 1;
-    
-    // Crear estructura completa
-    const newCompany = {
-      id: newId,
-      name: name,
-      color: color,
-      games: {},
-      metodosDeposito: [],
-      metodosCashout: [],
-      consideracionesCashout: '',
-      promociones: [],
-      terminosLink: '',
-      canales: [],
-      notas: [
-        {
-          texto: `Compañía "${name}" creada en el sistema`,
-          fecha: new Date().toISOString()
-        }
-      ]
+
+    const nameInput = document.getElementById('companyName');
+    const colorInput = document.getElementById('companyColor');
+    const colorPreview = document.getElementById('colorPreview');
+    const colorSuggestions = document.getElementById('colorSuggestions');
+    const partnerSelect = document.getElementById('companyPartner');
+    const closeBtn = document.getElementById('closeModalBtn');
+    const cancelBtn = document.getElementById('cancelModalBtn');
+    const createBtn = document.getElementById('createCompanyBtn');
+
+    // Reset inputs
+    nameInput.value = '';
+    colorInput.value = '#3b82f6';
+    colorPreview.style.background = '#3b82f6';
+    partnerSelect.value = '';
+
+    // Games clone elements
+    const gamesCloneSection = document.getElementById('gamesCloneSection');
+    const cloneSourceSelect = document.getElementById('cloneSourceCompany');
+    const cloneBtn = document.getElementById('cloneGamesBtn');
+    const gamesListContainer = document.getElementById('gamesListContainer');
+    const addGameRowBtn = document.getElementById('addGameRow');
+    let modalGamesList = []; // {name: string}
+
+    // Hide games section initially
+    gamesCloneSection.style.display = 'none';
+    gamesListContainer.innerHTML = '';
+
+    // Helper: render game rows
+    const renderModalGames = () => {
+      gamesListContainer.innerHTML = '';
+      modalGamesList.forEach((game, idx) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;flex-direction:column;gap:4px;padding:8px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);';
+        row.innerHTML = `
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span style="color:var(--text-tertiary);font-size:11px;min-width:20px;font-weight:600;">${idx + 1}.</span>
+            <input type="text" value="${game.name}" data-field="name" data-idx="${idx}" style="flex:1;padding:5px 8px;background:var(--bg-main);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:12px;font-family:inherit;outline:none;font-weight:600;" placeholder="Nombre del juego" />
+            <button type="button" data-remove="${idx}" style="padding:4px 7px;background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2);border-radius:var(--radius-sm);font-size:11px;cursor:pointer;font-family:inherit;" title="Eliminar">✕</button>
+          </div>
+          <div style="display:flex;gap:6px;padding-left:26px;">
+            <input type="text" value="${game.username || ''}" data-field="username" data-idx="${idx}" style="flex:1;padding:4px 8px;background:var(--bg-main);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:11px;font-family:inherit;outline:none;" placeholder="Username" />
+            <input type="text" value="${game.link || ''}" data-field="link" data-idx="${idx}" style="flex:1;padding:4px 8px;background:var(--bg-main);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:11px;font-family:inherit;outline:none;" placeholder="Link" />
+          </div>
+        `;
+        // Edit handlers
+        row.querySelectorAll('input').forEach(input => {
+          input.addEventListener('input', e => {
+            modalGamesList[idx][e.target.dataset.field] = e.target.value;
+          });
+        });
+        // Remove handler
+        row.querySelector('[data-remove]').addEventListener('click', () => {
+          modalGamesList.splice(idx, 1);
+          renderModalGames();
+        });
+        gamesListContainer.appendChild(row);
+      });
     };
-    
-    try {
-      // Deshabilitar botón mientras se crea
-      createBtn.disabled = true;
-      createBtn.textContent = 'Creando...';
-      
-      // Guardar en Firebase
-      await window.firebaseSet(
-        window.firebaseRef(window.db, `companies/${newId}`),
-        newCompany
-      );
-      
-      updateAddCompanyBtnVisibility();
 
-      toast.textContent = `✅ Compañía "${name}" creada correctamente`;
+    // Partner change: show games section + populate source dropdown
+    partnerSelect.onchange = () => {
+      const selectedPartner = partnerSelect.value;
+      if (!selectedPartner) {
+        gamesCloneSection.style.display = 'none';
+        return;
+      }
+      gamesCloneSection.style.display = 'block';
+      // Populate source company dropdown with same-partner companies
+      const samePartnerCompanies = companies.filter(c => c.partner === selectedPartner);
+      cloneSourceSelect.innerHTML = '<option value="">Copiar juegos de...</option>';
+      samePartnerCompanies.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = `${c.name} (${c.games.length} juegos)`;
+        cloneSourceSelect.appendChild(opt);
+      });
+      // Clear game list when partner changes
+      modalGamesList = [];
+      renderModalGames();
+    };
+
+    // Clone button: copy games from selected source
+    cloneBtn.onclick = () => {
+      const sourceId = cloneSourceSelect.value;
+      if (!sourceId) {
+        toast.textContent = '⚠️ Selecciona una compañía de origen';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+        return;
+      }
+      const sourceCompany = companies.find(c => String(c.id) === String(sourceId));
+      if (!sourceCompany) return;
+      modalGamesList = sourceCompany.games.map(g => ({ name: g.name, username: g.username || '', link: g.link || '' }));
+      renderModalGames();
+      toast.textContent = `✅ ${modalGamesList.length} juegos copiados de ${sourceCompany.name}`;
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 2000);
-      
-      closeModal();
-      
-    } catch (error) {
-      console.error('Error al crear compañía:', error);
-      toast.textContent = '❌ Error al crear compañía';
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2000);
-      
-      createBtn.disabled = false;
-      createBtn.textContent = 'Crear compañía';
+    };
+
+    // Add game row
+    addGameRowBtn.onclick = () => {
+      modalGamesList.push({ name: '', username: '', link: '' });
+      renderModalGames();
+      // Focus last input
+      const inputs = gamesListContainer.querySelectorAll('input');
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    };
+
+    // Renderizar sugerencias
+    renderColorSuggestions(colorSuggestions, colorInput, colorPreview);
+
+    // Actualizar preview en tiempo real
+    colorInput.addEventListener('input', () => {
+      const color = colorInput.value.trim();
+      if (/^#[0-9A-Fa-f]{6}$/.test(color)) {
+        colorPreview.style.background = color;
+      }
+    });
+
+    // Cerrar modal
+    const closeModal = () => {
+      modal.classList.remove('show');
+    };
+
+    closeBtn.onclick = closeModal;
+    cancelBtn.onclick = closeModal;
+
+    // Click fuera del modal
+    modal.onclick = (e) => {
+      if (e.target === modal) closeModal();
+    };
+
+    // Crear compañía
+    createBtn.onclick = async () => {
+      const name = nameInput.value.trim();
+      const color = colorInput.value.trim();
+      const partner = partnerSelect.value;
+
+      // Validaciones
+      if (!name) {
+        toast.textContent = '⚠️ El nombre es obligatorio';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+        return;
+      }
+
+      if (!partner) {
+        toast.textContent = '⚠️ Selecciona un partner';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+        return;
+      }
+
+      if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
+        toast.textContent = '⚠️ Color inválido. Usa formato #RRGGBB';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+        return;
+      }
+
+      // Verificar nombre duplicado
+      if (companies.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+        toast.textContent = '⚠️ Ya existe una compañía con ese nombre';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+        return;
+      }
+
+      // Obtener el próximo ID disponible
+      const maxId = companies.length > 0
+        ? Math.max(...companies.map(c => Number(c.id) || 0))
+        : 0;
+      const newId = maxId + 1;
+
+      // Build games object from modal list
+      const gamesObj = {};
+      const validGames = modalGamesList.filter(g => g.name.trim());
+      validGames.forEach((g, idx) => {
+        gamesObj[idx] = {
+          id: idx,
+          name: g.name.trim(),
+          username: g.username || '',
+          link: g.link || '',
+          active: true,
+          lastModified: new Date().toISOString().split('T')[0]
+        };
+      });
+
+      // Crear estructura completa
+      const newCompany = {
+        id: newId,
+        name: name,
+        color: color,
+        partner: partner,
+        games: gamesObj,
+        metodosDeposito: [],
+        metodosCashout: [],
+        consideracionesCashout: '',
+        promociones: [],
+        terminosLink: '',
+        canales: [],
+        notas: [
+          {
+            texto: `Compañía "${name}" creada en el sistema${validGames.length ? ` con ${validGames.length} juegos` : ''}`,
+            fecha: new Date().toISOString()
+          }
+        ]
+      };
+
+      try {
+        // Deshabilitar botón mientras se crea
+        createBtn.disabled = true;
+        createBtn.textContent = 'Creando...';
+
+        // Guardar en Firebase
+        await window.firebaseSet(
+          window.firebaseRef(window.db, `companies/${newId}`),
+          newCompany
+        );
+
+        updateAddCompanyBtnVisibility();
+
+        toast.textContent = `✅ Compañía "${name}" creada correctamente`;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+
+        closeModal();
+
+      } catch (error) {
+        console.error('Error al crear compañía:', error);
+        toast.textContent = '❌ Error al crear compañía';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+
+        createBtn.disabled = false;
+        createBtn.textContent = 'Crear compañía';
+      }
+    };
+
+    modal.classList.add('show');
+    nameInput.focus();
+  };
+
+  // Event listener del botón
+  if (addCompanyBtn) {
+    addCompanyBtn.addEventListener('click', openAddCompanyModal);
+  }
+
+  // Mostrar botón solo si está logueado como admin
+  const updateAddCompanyBtnVisibility = () => {
+    if (addCompanyBtn) {
+      const shouldShow = adminLoggedIn && isEditMode;
+      addCompanyBtn.style.display = shouldShow ? 'block' : 'none';
     }
   };
-  
-  modal.classList.add('show');
-  nameInput.focus();
-};
 
-// Event listener del botón
-if (addCompanyBtn) {
-  addCompanyBtn.addEventListener('click', openAddCompanyModal);
-}
-
-// Mostrar botón solo si está logueado como admin
-const updateAddCompanyBtnVisibility = () => {
-  if (addCompanyBtn) {
-    const shouldShow = adminLoggedIn && isEditMode;
-    addCompanyBtn.style.display = shouldShow ? 'block' : 'none';
-  }
-};
-
-// Llamar después de login admin
-updateAddCompanyBtnVisibility();
+  // Llamar después de login admin
+  updateAddCompanyBtnVisibility();
 
 
   // Cargar companies desde Firebase y arrancar

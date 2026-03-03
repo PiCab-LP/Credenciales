@@ -1,79 +1,129 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <link rel="shortcut icon" href="/image.png" />
     <title>OPERAPEDIA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-    <div class="container">
-        <div class="sidebar">
-            <div class="sidebar-header">
-                <h1>📓 OPERAPEDIA</h1>
-                <input
-                    type="text"
-                    class="global-search"
-                    id="globalSearch"
-                    placeholder="Buscar información en todas las compañías..."
-                >
-            </div>
 
-            <div class="local-filter">
-                <div class="local-filter-label">Filtro:</div>
-                <div id="localFilterList"></div>
-                <button id="addCompanyBtn" class="add-company-btn" style="display: none;">
-                ➕ Nueva compañía
+<body>
+    <!-- ========== NAVBAR SUPERIOR ========== -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <span class="brand-icon">📓</span>
+            <span class="brand-text">OPERAPEDIA</span>
+        </div>
+        <div class="navbar-center">
+            <div class="omnibar-wrapper">
+                <span class="omnibar-icon">🔍</span>
+                <input type="text" class="omnibar" id="globalSearch" placeholder="Buscar en todas las compañías...">
+                <!-- Filter bar (visible when searching) -->
+                <div class="search-filters" id="searchFilters">
+                    <div class="filter-group">
+                        <span class="filter-group-label">Partner:</span>
+                        <button class="filter-chip partner-chip" data-partner="Dragon">🐲 Dragon</button>
+                        <button class="filter-chip partner-chip" data-partner="Tierlock">🔒 Tierlock</button>
+                        <button class="filter-chip partner-chip" data-partner="Taparcadia">🎮 Taparcadia</button>
+                        <button class="filter-chip partner-chip" data-partner="Wysaro">⭐ Wysaro</button>
+                    </div>
+                    <div class="filter-divider-v"></div>
+                    <div class="filter-group">
+                        <span class="filter-group-label">Buscar en:</span>
+                        <button class="filter-chip" data-category="credenciales">🎮 Credenciales</button>
+                        <button class="filter-chip" data-category="deposito">💰 Depósito</button>
+                        <button class="filter-chip" data-category="cashout">💸 Cashout</button>
+                        <button class="filter-chip" data-category="consideraciones">📋 Consideraciones</button>
+                        <button class="filter-chip" data-category="promociones">🎁 Promociones</button>
+                        <button class="filter-chip" data-category="terminos">📜 Términos</button>
+                        <button class="filter-chip" data-category="canales">📞 Canales</button>
+                        <button class="filter-chip" data-category="notas">📝 Notas</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="navbar-actions">
+            <label class="theme-switch" title="Cambiar tema">
+                <input type="checkbox" id="themeToggle">
+                <span class="theme-slider">
+                    <span class="theme-icon-light">☀️</span>
+                    <span class="theme-icon-dark">🌙</span>
+                </span>
+            </label>
+            <button id="editModeBtn" class="btn btn-edit" disabled>
+                <span class="btn-edit-icon">✏️</span>
+                <span class="btn-edit-label">Editar</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ========== LAYOUT PRINCIPAL ========== -->
+    <div class="app-layout">
+        <!-- SIDEBAR IZQUIERDO -->
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-search-wrapper">
+                    <span class="sidebar-search-icon">🔍</span>
+                    <input type="text" class="sidebar-search" id="sidebarSearch" placeholder="Buscar compañía...">
+                </div>
+                <button id="addCompanyBtn" class="btn btn-add-company" style="display: none;">
+                    ➕ Nueva compañía
                 </button>
             </div>
-
-            <div class="companies-list" id="companiesList"></div>
-        </div>
-
-        <div class="content">
-            <div class="content-header">
-                <div class="company-title-row">
-                    <div class="company-title" id="companyTitle">Selecciona una compañía</div>
-                    <button id="editModeBtn" class="edit-btn" disabled>Editar</button>
-                        <div style="flex: 1;"></div>
-                    <label class="theme-switch" title="Cambiar tema">
-                        <input type="checkbox" id="themeToggle">
-                        <span class="theme-slider">
-                            <span class="theme-icon-light">☀️</span>
-                            <span class="theme-icon-dark">🌙</span>
-                        </span>
-                    </label>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-section sidebar-section-grow">
+                <div class="sidebar-section-title">
+                    <span>Compañías</span>
+                    <span class="sidebar-badge" id="companyCountBadge">0</span>
                 </div>
-
-                <!-- TABS HORIZONTALES (solo visibles cuando hay compañía seleccionada) -->
-                <div class="tabs-container" id="tabsContainer">
-                    <button class="tab tab-active" data-tab="credenciales">Credenciales</button>
-                    <button class="tab" data-tab="deposito">Métodos de depósito</button>
-                    <button class="tab" data-tab="cashout">Métodos de cashout</button>
-                    <button class="tab" data-tab="consideraciones">Consideraciones para cashouts</button>
-                    <button class="tab" data-tab="promociones">Promociones</button>
-                    <button class="tab" data-tab="terminos">Términos y condiciones</button>
-                    <button class="tab" data-tab="canales">Canales de atención</button>
-                    <button class="tab" data-tab="notas">Notas</button>
-                </div>
+                <div class="companies-list" id="companiesList"></div>
             </div>
+            <!-- Hidden element to keep localFilterList for JS compat -->
+            <div id="localFilterList" style="display:none;"></div>
+        </aside>
 
-            <!-- CONTENEDOR DE CONTENIDO POR TAB -->
-            <div class="tab-content" id="tabContent">
-                <!-- TAB: CREDENCIALES (tu grilla actual) -->
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="main-content">
+            <!-- Breadcrumb + Título -->
+            <header class="main-header" id="mainHeader">
+                <div class="breadcrumb" id="breadcrumb">
+                    <span class="breadcrumb-item">Inicio</span>
+                </div>
+                <div class="company-title-row">
+                    <h1 class="company-title" id="companyTitle">Selecciona una compañía</h1>
+                    <span class="partner-badge" id="partnerBadge" style="display:none;"></span>
+                    <button class="delete-company-btn" id="deleteCompanyBtn" style="display:none;"
+                        title="Eliminar compañía">🗑️ Eliminar</button>
+                </div>
+                <!-- TABS como Sub-Navegación -->
+                <div class="tabs-container" id="tabsContainer" style="display:none;">
+                    <button class="tab tab-active" data-tab="credenciales">🎮 Credenciales</button>
+                    <button class="tab" data-tab="deposito">💰 Depósito</button>
+                    <button class="tab" data-tab="cashout">💸 Cashout</button>
+                    <button class="tab" data-tab="consideraciones">📋 Consideraciones</button>
+                    <button class="tab" data-tab="promociones">🎁 Promociones</button>
+                    <button class="tab" data-tab="terminos">📜 Términos</button>
+                    <button class="tab" data-tab="canales">📞 Canales</button>
+                    <button class="tab" data-tab="notas">📝 Notas</button>
+                </div>
+            </header>
+
+            <!-- Área de contenido scrolleable -->
+            <div class="content-area">
+                <!-- TAB: CREDENCIALES -->
                 <div class="tab-pane tab-pane-active" data-pane="credenciales">
-                    <input
-                        type="text"
-                        class="game-search"
-                        id="gameSearch"
-                        placeholder="Buscar juegos en esta compañía..."
-                    >
+                    <input type="text" class="content-search" id="gameSearch" placeholder="Buscar credenciales...">
                     <div class="games-grid" id="gamesGrid">
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📁</div>
-                            <p>Selecciona una compañía para ver sus credenciales</p>
+                        <div class="welcome-state" id="welcomeState">
+                            <div class="welcome-icon">📓</div>
+                            <h2>Bienvenido a Operapedia</h2>
+                            <p>Selecciona una compañía en la barra lateral para explorar su información.</p>
                         </div>
                     </div>
                 </div>
@@ -88,7 +138,7 @@
                     <div id="cashoutContent"></div>
                 </div>
 
-                <!-- TAB: CONSIDERACIONES PARA CASHOUTS -->
+                <!-- TAB: CONSIDERACIONES -->
                 <div class="tab-pane" data-pane="consideraciones">
                     <div id="consideracionesContent"></div>
                 </div>
@@ -108,11 +158,12 @@
                     <div id="canalesContent"></div>
                 </div>
 
-                <div class="tab-pane" data-pane="notas"> <!-- ← AGREGAR ESTO -->
-                <div id="notasContent"></div>
+                <!-- TAB: NOTAS -->
+                <div class="tab-pane" data-pane="notas">
+                    <div id="notasContent"></div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <div class="toast" id="toast">Copiado al portapapeles</div>
@@ -147,4 +198,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>
