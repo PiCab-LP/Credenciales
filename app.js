@@ -2252,15 +2252,22 @@ document.addEventListener('DOMContentLoaded', () => {
           adminLoggedIn = storedAdmin === 'true';
 
           if (!adminLoggedIn) {
-            const pwd = prompt('Introduce la contraseña de administrador para editar:');
+            const pwd = await showPasswordModal(
+              'Acceso de administrador',
+              'Introduce la contraseña de administrador para editar.'
+            );
             if (!pwd) return;
             if (pwd !== ADMIN_PASSWORD) {
-              alert('Contraseña incorrecta.');
+              toast.textContent = '❌ Contraseña incorrecta';
+              toast.classList.add('show');
+              setTimeout(() => toast.classList.remove('show'), 2000);
               return;
             }
             adminLoggedIn = true;
             localStorage.setItem('credentialsAdminLoggedIn', 'true');
-            alert('Acceso concedido. Ahora puedes editar.');
+            toast.textContent = '✅ Acceso concedido. Ahora puedes editar.';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
             updateAddCompanyBtnVisibility();
           }
         }
