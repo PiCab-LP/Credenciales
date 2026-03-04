@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       overlay.querySelector('.confirm-btn-accept').addEventListener('click', () => close(true));
       overlay.querySelector('.confirm-btn-cancel').addEventListener('click', () => close(false));
-      overlay.addEventListener('click', e => { if (e.target === overlay) close(false); });
+
     });
   };
 
@@ -88,9 +88,167 @@ document.addEventListener('DOMContentLoaded', () => {
 
       overlay.querySelector('.confirm-btn-accept').addEventListener('click', () => close(input.value));
       overlay.querySelector('.confirm-btn-cancel').addEventListener('click', () => close(null));
-      overlay.addEventListener('click', e => { if (e.target === overlay) close(null); });
+
       input.addEventListener('keydown', e => { if (e.key === 'Enter') close(input.value); });
     });
+  };
+
+  // ==================== GAME CATALOG ====================
+  let gameCatalog = []; // [{id, name, link}]
+
+  // Load catalog from Firebase
+  if (window.gameCatalogRef && window.firebaseOnValue) {
+    window.firebaseOnValue(window.gameCatalogRef, snapshot => {
+      const data = snapshot.val() || {};
+      gameCatalog = Object.entries(data).map(([key, val]) => ({
+        id: val.id ?? key,
+        name: val.name || '',
+        link: val.link || ''
+      }));
+    });
+  }
+
+  // Catalog modal
+  const catalogBtn = document.getElementById('catalogBtn');
+  if (catalogBtn) {
+    catalogBtn.addEventListener('click', async () => {
+      // Require admin
+      if (!adminLoggedIn) {
+        const storedAdmin = localStorage.getItem('credentialsAdminLoggedIn');
+        adminLoggedIn = storedAdmin === 'true';
+        if (!adminLoggedIn) {
+          const pwd = await showPasswordModal(
+            'Acceso de administrador',
+            'Introduce la contraseña para gestionar el catálogo.'
+          );
+          if (!pwd) return;
+          if (pwd !== ADMIN_PASSWORD) {
+            toast.textContent = '❌ Contraseña incorrecta';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+            return;
+          }
+          adminLoggedIn = true;
+          localStorage.setItem('credentialsAdminLoggedIn', 'true');
+        }
+      }
+      openCatalogModal();
+    });
+  }
+
+  const openCatalogModal = () => {
+    const existing = document.getElementById('catalogModal');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'catalogModal';
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal-content" style="max-width:560px;">
+        <div class="modal-header">
+          <h2 class="modal-title">📋 Catálogo de Juegos</h2>
+          <button class="modal-close" id="closeCatalogBtn">✕</button>
+        </div>
+        <div class="modal-body" style="padding:16px 20px;">
+          <p style="color:var(--text-secondary);font-size:12px;margin:0 0 12px;">
+            Gestiona la lista maestra de juegos. Estos nombres aparecerán como opciones al agregar juegos a compañías.
+          </p>
+          <div id="catalogList" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
+          <button type="button" id="addCatalogGameBtn" style="margin-top:10px;padding:8px 14px;background:transparent;color:var(--accent);border:1px dashed var(--accent);border-radius:var(--radius-sm);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;width:100%;transition:all 0.15s;">+ Agregar juego al catálogo</button>
+        </div>
+        <div class="modal-footer">
+          <button class="modal-btn modal-btn-secondary" id="cancelCatalogBtn">Cerrar</button>
+          <button class="modal-btn modal-btn-primary" id="saveCatalogBtn">Guardar catálogo</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    let localCatalog = gameCatalog.map(g => ({ ...g }));
+
+    const listContainer = overlay.querySelector('#catalogList');
+
+    const renderCatalogList = () => {
+      listContainer.innerHTML = '';
+      if (!localCatalog.length) {
+        listContainer.innerHTML = '<p style="color:var(--text-tertiary);font-size:12px;text-align:center;padding:20px 0;">No hay juegos en el catálogo</p>';
+        return;
+      }
+      localCatalog.forEach((game, idx) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;gap:6px;align-items:center;padding:6px 8px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);';
+        row.innerHTML = `
+          <span style="color:var(--text-tertiary);font-size:11px;min-width:22px;font-weight:600;">${idx + 1}.</span>
+          <input type="text" value="${game.name}" data-field="name" style="flex:1;padding:6px 8px;background:var(--bg-main);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:12px;font-family:inherit;outline:none;font-weight:600;" placeholder="Nombre del juego" />
+          <input type="text" value="${game.link}" data-field="link" style="flex:1;padding:6px 8px;background:var(--bg-main);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:11px;font-family:inherit;outline:none;" placeholder="Link del juego" />
+          <button type="button" data-remove="${idx}" style="padding:4px 7px;background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2);border-radius:var(--radius-sm);font-size:11px;cursor:pointer;font-family:inherit;" title="Eliminar">✕</button>
+        `;
+        row.querySelectorAll('input').forEach(input => {
+          input.addEventListener('input', e => {
+            localCatalog[idx][e.target.dataset.field] = e.target.value;
+          });
+        });
+        row.querySelector('[data-remove]').addEventListener('click', async () => {
+          const gameName = localCatalog[idx]?.name || `Juego #${idx + 1}`;
+          const confirmed = await showConfirmModal(
+            '¿Eliminar del catálogo?',
+            `¿Estás seguro de borrar "${gameName}" del catálogo de juegos?`,
+            'Eliminar',
+            'Cancelar'
+          );
+          if (!confirmed) return;
+          localCatalog.splice(idx, 1);
+          renderCatalogList();
+        });
+        listContainer.appendChild(row);
+      });
+    };
+
+    renderCatalogList();
+
+    // Add game
+    overlay.querySelector('#addCatalogGameBtn').addEventListener('click', () => {
+      const maxId = localCatalog.length > 0 ? Math.max(...localCatalog.map(g => Number(g.id) || 0)) : -1;
+      localCatalog.push({ id: maxId + 1, name: '', link: '' });
+      renderCatalogList();
+      const inputs = listContainer.querySelectorAll('input[data-field="name"]');
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    });
+
+    // Save
+    overlay.querySelector('#saveCatalogBtn').addEventListener('click', async () => {
+      const valid = localCatalog.filter(g => g.name.trim());
+      const catalogObj = {};
+      valid.forEach((g, idx) => {
+        catalogObj[idx] = { id: idx, name: g.name.trim(), link: g.link.trim() };
+      });
+      try {
+        await window.firebaseSet(
+          window.firebaseRef(window.db, 'gameCatalog'),
+          catalogObj
+        );
+        toast.textContent = `✅ Catálogo guardado (${valid.length} juegos)`;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+        closeModal();
+      } catch (err) {
+        console.error('Error saving catalog:', err);
+        toast.textContent = '❌ Error al guardar catálogo';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+      }
+    });
+
+    // Close
+    const closeModal = () => {
+      overlay.classList.remove('show');
+      setTimeout(() => overlay.remove(), 200);
+    };
+    overlay.querySelector('#closeCatalogBtn').addEventListener('click', closeModal);
+    overlay.querySelector('#cancelCatalogBtn').addEventListener('click', closeModal);
+
+
+    requestAnimationFrame(() => overlay.classList.add('show'));
   };
 
   // ==================== THEME TOGGLE ====================
@@ -318,38 +476,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  // ========= ESTADO LOCAL (toggles) =========
-  const loadState = () => {
-    const saved = localStorage.getItem('credentialsState');
-    if (!saved) return;
-    const state = JSON.parse(saved);
-    companies.forEach(company => {
-      company.games.forEach(game => {
-        const s = state.find(
-          g => String(g.companyId) === String(company.id) && String(g.id) === String(game.id)
-        );
-        if (s) {
-          game.active = s.active;
-          game.lastModified = s.lastModified;
-        }
-      });
-    });
-  };
-
-  const saveState = () => {
-    const state = [];
-    companies.forEach(company => {
-      company.games.forEach(game => {
-        state.push({
-          companyId: company.id,
-          id: game.id,
-          active: game.active,
-          lastModified: game.lastModified
-        });
-      });
-    });
-    localStorage.setItem('credentialsState', JSON.stringify(state));
-  };
 
   // ========= RENDER COMPAÑÍAS =========
   const renderCompanies = () => {
@@ -754,6 +880,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (isEditMode && currentCompany) {
+      const catalogOptions = gameCatalog.map(g =>
+        `<option value="${g.id}" data-link="${g.link}">${g.name}</option>`
+      ).join('');
       html += `
         <div class="game-card new-game-card">
           <div class="game-header">
@@ -761,8 +890,16 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <div class="game-details">
             <div class="detail-row">
+              <span class="detail-label">Juego:</span>
+              <select class="new-game-select" style="flex:1;padding:7px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:12px;font-family:inherit;outline:none;">
+                <option value="" disabled selected>Selecciona del catálogo...</option>
+                ${catalogOptions}
+                <option value="__custom__">✏️ Otro (escribir nombre)</option>
+              </select>
+            </div>
+            <div class="detail-row new-game-custom-row" style="display:none;">
               <span class="detail-label">Nombre:</span>
-              <input class="new-game-name-input">
+              <input class="new-game-name-input" placeholder="Nombre personalizado">
             </div>
             <div class="detail-row">
               <span class="detail-label">Username:</span>
@@ -784,6 +921,28 @@ document.addEventListener('DOMContentLoaded', () => {
     gamesGrid.innerHTML = html;
     if (isEditMode && currentCompany) {
       attachEditInputsListeners();
+      // Catalog select handler
+      const gameSelect = gamesGrid.querySelector('.new-game-select');
+      if (gameSelect) {
+        gameSelect.addEventListener('change', () => {
+          const val = gameSelect.value;
+          const customRow = gamesGrid.querySelector('.new-game-custom-row');
+          const linkInput = gamesGrid.querySelector('.new-game-link-input');
+          const nameInput = gamesGrid.querySelector('.new-game-name-input');
+          if (val === '__custom__') {
+            customRow.style.display = 'flex';
+            if (nameInput) nameInput.value = '';
+            if (linkInput) linkInput.value = '';
+            nameInput.focus();
+          } else {
+            customRow.style.display = 'none';
+            const selectedOption = gameSelect.options[gameSelect.selectedIndex];
+            const catalogLink = selectedOption.getAttribute('data-link') || '';
+            if (linkInput) linkInput.value = catalogLink;
+            if (nameInput) nameInput.value = selectedOption.textContent;
+          }
+        });
+      }
     }
   };
 
@@ -1914,7 +2073,6 @@ document.addEventListener('DOMContentLoaded', () => {
       window.firebaseSet(nodeRef, null);
     }
 
-    saveState();
     renderCompanies();
     if (currentCompany && String(currentCompany.id) === String(companyId)) {
       renderGames(currentCompany.games, gameSearch.value);
@@ -1924,18 +2082,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const addGameToCurrentCompany = async () => {
     if (!currentCompany) return;
 
+    const gameSelect = gamesGrid.querySelector('.new-game-select');
     const nameInput = gamesGrid.querySelector('.new-game-name-input');
     const userInput = gamesGrid.querySelector('.new-game-username-input');
     const linkInput = gamesGrid.querySelector('.new-game-link-input');
 
-    if (!nameInput || !userInput || !linkInput) return;
+    if (!userInput || !linkInput) return;
 
-    const name = nameInput.value.trim();
+    // Get name from select or custom input
+    let name = '';
+    if (gameSelect && gameSelect.value && gameSelect.value !== '__custom__') {
+      name = gameSelect.options[gameSelect.selectedIndex].textContent.trim();
+    } else if (nameInput) {
+      name = nameInput.value.trim();
+    }
+
     const username = userInput.value.trim();
     const link = linkInput.value.trim();
 
-    if (!name || !username || !link) {
-      toast.textContent = 'Nombre, username y link son obligatorios';
+    if (!name) {
+      toast.textContent = '⚠️ Selecciona o escribe un nombre de juego';
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 1500);
       return;
@@ -1971,7 +2137,6 @@ document.addEventListener('DOMContentLoaded', () => {
       window.firebaseSet(nodeRef, newGame);
     }
 
-    saveState();
     renderCompanies();
     renderGames(currentCompany.games, gameSearch.value);
 
@@ -2072,7 +2237,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
 
-      saveState();
       renderGames(currentCompany.games, gameSearch.value);
 
       toast.textContent = 'Cambios guardados';
@@ -2155,7 +2319,6 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       overlay.querySelector('.confirm-btn-cancel').addEventListener('click', closeOverlay);
-      overlay.addEventListener('click', ev => { if (ev.target === overlay) closeOverlay(); });
 
       overlay.querySelector('.confirm-btn-accept').addEventListener('click', async () => {
         const sourceId = overlay.querySelector('#importSourceSelect').value;
@@ -2233,7 +2396,6 @@ document.addEventListener('DOMContentLoaded', () => {
       game.active = !game.active;
       game.lastModified = new Date().toISOString().split('T')[0];
 
-      saveState();
       updateRemoteToggle(company, game);
 
       renderCompanies();
@@ -2314,7 +2476,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateAddCompanyBtnVisibility();
 
     loadLocalFilter();
-    loadState();
     applyRemoteSettings();
     renderLocalFilterList();
     renderCompanies();
@@ -2588,10 +2749,6 @@ document.addEventListener('DOMContentLoaded', () => {
     closeBtn.onclick = closeModal;
     cancelBtn.onclick = closeModal;
 
-    // Click fuera del modal
-    modal.onclick = (e) => {
-      if (e.target === modal) closeModal();
-    };
 
     // Crear compañía
     createBtn.onclick = async () => {

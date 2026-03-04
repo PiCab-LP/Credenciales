@@ -56,6 +56,10 @@
                     <span class="theme-icon-dark">🌙</span>
                 </span>
             </label>
+            <button id="catalogBtn" class="btn btn-catalog" title="Catálogo de juegos">
+                <span class="btn-edit-icon">📋</span>
+                <span class="btn-edit-label">Catálogo</span>
+            </button>
             <button id="editModeBtn" class="btn btn-edit" disabled>
                 <span class="btn-edit-icon">✏️</span>
                 <span class="btn-edit-label">Editar</span>
@@ -191,6 +195,7 @@
         window.db = db;
         window.gamesRef = ref(db, "gamesConfig");
         window.companiesRef = ref(db, "companies");
+        window.gameCatalogRef = ref(db, "gameCatalog");
         window.firebaseOnValue = onValue;
         window.firebaseSet = set;
         window.firebaseRef = ref;

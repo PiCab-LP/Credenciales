@@ -1054,6 +1054,23 @@ textarea,
   font-size: 12px;
 }
 
+.btn-catalog {
+  padding: 7px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-catalog:hover {
+  background: var(--border-hover);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .btn-edit:disabled {
   opacity: 0.35;
   cursor: default;
